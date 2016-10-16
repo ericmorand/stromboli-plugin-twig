@@ -31,68 +31,52 @@ class Plugin extends StromboliPlugin {
       return that.readFile(file).then(
         function (readResult) {
           var twig = that.twig;
-          var dependencies = [];
-
-          dependencies.push(file);
-
-          twig.cache(false);
-          twig.twig({
-            path: file,
-            rethrow: true,
-            load: function (template) {
-              template.tokens.forEach(function (token) {
-                if (token.type == 'logic') {
-                  token = token.token;
-
-                  if (token.type == 'Twig.logic.type.include') {
-                    var stack = token.stack;
-
-                    stack.forEach(function (stackEntry) {
-                      var dep = path.resolve(path.dirname(file), stackEntry.value);
-
-                      dependencies.push(dep);
-                    });
-                  }
-                }
-              });
-
-              dependencies.forEach(function (dependency) {
+          return that.getDependencies(file).then(
+            function(dependencies) {
+              dependencies.forEach(function(dependency) {
                 renderResult.addDependency(dependency);
               });
 
-              return that.getTemplateData(file).then(
-                function (result) {
-                  result.files.forEach(function (file) {
-                    renderResult.addDependency(file);
-                  });
+              twig.cache(false);
+              twig.twig({
+                path: file,
+                rethrow: true,
+                load: function (template) {
+                  return that.getTemplateData(file).then(
+                    function (result) {
+                      result.files.forEach(function (file) {
+                        renderResult.addDependency(file);
+                      });
 
-                  try {
-                    var binary = template.render(result.data);
+                      try {
+                        var binary = template.render(result.data);
 
-                    renderResult.addBinary('index.html', binary);
+                        renderResult.addBinary('index.html', binary);
 
-                    fulfill(renderResult);
-                  }
-                  catch (err) {
-                    var error = {
-                      file: null,
-                      message: err
-                    };
+                        fulfill(renderResult);
+                      }
+                      catch (err) {
+                        var error = {
+                          file: null,
+                          message: err
+                        };
 
-                    reject(error);
-                  }
+                        reject(error);
+                      }
+                    }
+                  );
+                },
+                error: function (err) {
+                  var error = {
+                    file: file,
+                    message: err
+                  };
+
+                  reject(error);
                 }
-              );
-            },
-            error: function (err) {
-              var error = {
-                file: file,
-                message: err
-              };
-
-              reject(error);
+              });
             }
-          });
+          );
         }
       );
     });
@@ -100,7 +84,8 @@ class Plugin extends StromboliPlugin {
 
   getTemplateData(file) {
     var that = this;
-    var dataFile = path.join(path.dirname(file), 'demo.json');
+    var extension = path.extname(file);
+    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.json');
 
     var result = {
       files: [],
@@ -122,6 +107,58 @@ class Plugin extends StromboliPlugin {
         return result;
       }
     );
+  }
+
+  getDependencies(file) {
+    var that = this;
+    var twig = that.twig;
+
+    var resolveDependencies = function(_file, _results) {
+      return that.exists(_file).then(
+        function () {
+          return new Promise(function (fulfill, reject) {
+              twig.twig({
+                path: _file,
+                rethrow: true,
+                load: function (template) {
+                  var promises = [];
+
+                  _results.push(_file);
+
+                  template.tokens.forEach(function (token) {
+                    if (token.type == 'logic') {
+                      token = token.token;
+
+                      if (token.type == 'Twig.logic.type.include') {
+                        var stack = token.stack;
+
+                        stack.forEach(function (stackEntry) {
+                          var dep = path.resolve(path.dirname(_file), stackEntry.value);
+
+                          if (_results.indexOf(dep) < 0) {
+                            promises.push(resolveDependencies(dep, _results))
+                          }
+                        });
+                      }
+                    }
+                  });
+
+                  fulfill(Promise.all(promises));
+                }
+              });
+            }
+          )
+        },
+        function () {
+          return true;
+        }).then(
+        function () {
+          return _results;
+        }
+      );
+    };
+
+    return resolveDependencies(file, []);
   }
 }
 
