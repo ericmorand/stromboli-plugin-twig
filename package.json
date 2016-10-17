@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/plugin.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tap test/*.js"
   },
   "author": "Eric MORAND",
   "dependencies": {
@@ -14,5 +14,9 @@
     "twig": "^0.9.5"
   },
   "repository": "ericmorand/stromboli-plugin-twig",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "stromboli": "^0.4.0",
+    "tap": "^7.1.2"
+  }
 }
