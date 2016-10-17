@@ -6,7 +6,7 @@ const fs = require('fs');
 
 var plugin = new Plugin({}, 'twig', 'index.twig');
 
-test('render', function (t) {
+test('render without data', function (t) {
   t.plan(3);
 
   var renderResult = new RenderResult();
@@ -38,12 +38,29 @@ test('render with data', function (t) {
       t.equal(renderResult.getBinaries().length, 1);
 
       var render = renderResult.getBinaries()[0].data;
-      var awaited = fs.readFileSync(path.resolve('test/render/data/index.html')).toString();
+      var awaited = '<div class="outer"><div class="inner">Lorem ipsum</div></div>';
 
-      t.equal(render, awaited);
+      t.same(render, awaited);
     },
     function(err) {
       t.fail(err);
+    }
+  );
+});
+
+test('render with error', function (t) {
+  t.plan(1);
+
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/error/index.twig'), renderResult).then(
+    function(renderResult) {
+      console.log(renderResult);
+
+      t.fail();
+    },
+    function(err) {
+      t.pass(err);
     }
   );
 });
