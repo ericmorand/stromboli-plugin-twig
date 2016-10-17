@@ -20,6 +20,6 @@ Apache-2.0 © [Eric MORAND]()
 [travis-image]: https://travis-ci.org/ericmorand/stromboli-plugin-twig.svg?branch=master
 [travis-url]: https://travis-ci.org/ericmorand/stromboli-plugin-twig
 [daviddm-image]: https://david-dm.org/ericmorand/stromboli-plugin-twig.svg?theme=shields.io
-[daviddm-url]: https://david-dm.org/ericmorand@b/stromboli-plugin-twig
+[daviddm-url]: https://david-dm.org/ericmorand/stromboli-plugin-twig
 [coveralls-image]: https://coveralls.io/repos/ericmorand/stromboli-plugin-twig/badge.svg
 [coveralls-url]: https://coveralls.io/r/ericmorand/stromboli-plugin-twig
