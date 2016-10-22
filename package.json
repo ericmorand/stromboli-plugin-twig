@@ -10,7 +10,6 @@
   "dependencies": {
     "fs-extra": "^0.30.0",
     "promise": "^7.1.1",
-    "stromboli-plugin": "^0.1.0",
     "twig": "^0.9.5"
   },
   "repository": "ericmorand/stromboli-plugin-twig",

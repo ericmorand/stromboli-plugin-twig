@@ -1,21 +1,59 @@
-var StromboliPlugin = require('stromboli-plugin');
-var fs = require('fs-extra');
-var path = require('path');
+const fs = require('fs-extra');
+const path = require('path');
 
-var Promise = require('promise');
-var readJSON = Promise.denodeify(fs.readJSON);
+const Promise = require('promise');
+const readJSON = Promise.denodeify(fs.readJSON);
+const fsStat = Promise.denodeify(fs.stat);
+const fsReadFile = Promise.denodeify(fs.readFile);
 
-class Plugin extends StromboliPlugin {
+class Plugin {
   /**
    *
    * @param config {Object}
-   * @param name {String}
-   * @param entry {String}
    */
-  constructor(config, name, entry) {
-    super(config, name, entry);
-
+  constructor(config) {
+    this.config = config;
     this.twig = require('twig');
+
+    /**
+     *
+     * @param path {String}
+     * @returns {Promise}
+     */
+    this.exists = function(path) {
+      return fsStat(path).then(
+        function () {
+          return path;
+        },
+        function (e) {
+          return Promise.reject(e);
+        }
+      )
+    };
+
+    this._twig = function(file) {
+      var that = this;
+
+      return new Promise(function (fulfill, reject) {
+        var twig = that.twig;
+
+        twig.cache(false);
+
+        try {
+          twig.twig({
+            path: file,
+            rethrow: true,
+            async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
+            load: function (template) {
+              fulfill(template)
+            }
+          });
+        }
+        catch (err) {
+          reject(err);
+        }
+      });
+    };
   }
 
   /**
@@ -36,7 +74,7 @@ class Plugin extends StromboliPlugin {
           });
         }
       ),
-      that.readFile(file).then(
+      fsReadFile(file).then(
         function () {
           return that._twig(file).then(
             function (template) {
@@ -87,36 +125,6 @@ class Plugin extends StromboliPlugin {
         return result;
       }
     );
-  }
-
-  /**
-   *
-   * @param file
-   * @returns {Promise}
-   * @private
-     */
-  _twig(file) {
-    var that = this;
-
-    return new Promise(function (fulfill, reject) {
-      var twig = that.twig;
-
-      twig.cache(false);
-
-      try {
-        twig.twig({
-          path: file,
-          rethrow: true,
-          async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
-          load: function (template) {
-            fulfill(template)
-          }
-        });
-      }
-      catch (err) {
-        reject(err);
-      }
-    });
   }
 
   getDependencies(file) {
