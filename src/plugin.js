@@ -2,9 +2,9 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const Promise = require('promise');
-const readJSON = Promise.denodeify(fs.readJSON);
 const fsStat = Promise.denodeify(fs.stat);
 const fsReadFile = Promise.denodeify(fs.readFile);
+const required = Promise.denodeify(require('required'));
 
 class Plugin {
   /**
@@ -20,7 +20,7 @@ class Plugin {
      * @param path {String}
      * @returns {Promise}
      */
-    this.exists = function(path) {
+    this.exists = function (path) {
       return fsStat(path).then(
         function () {
           return path;
@@ -31,7 +31,7 @@ class Plugin {
       )
     };
 
-    this._twig = function(file) {
+    this._twig = function (file) {
       var that = this;
 
       return new Promise(function (fulfill, reject) {
@@ -103,7 +103,7 @@ class Plugin {
   getTemplateData(file) {
     var that = this;
     var extension = path.extname(file);
-    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.json');
+    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
 
     var result = {
       files: [],
@@ -112,14 +112,44 @@ class Plugin {
 
     return that.exists(dataFile).then(
       function () {
-        return readJSON(dataFile).then(
-          function (data) {
-            result.files.push(dataFile);
+        delete require.cache[dataFile];
+
+        var data = require(dataFile);
+
+        // retrieve data dependencies
+        var getDataDependencies = function(file, results) {
+          return required(file).then(
+            function(deps) {
+              results.push(file);
+
+              var promises = [];
+
+              deps.forEach(function(dep) {
+                results.push(dep.filename);
+
+                dep.deps.forEach(function(subDep) {
+                  promises.push(getDataDependencies(subDep.filename, results));
+                });
+              });
+
+              return new Promise.all(promises);
+            }
+          )
+        };
+
+        var dataDependencies = [];
+
+        return getDataDependencies(dataFile, dataDependencies).then(
+          function() {
+            dataDependencies.forEach(function(dataDependency) {
+              result.files.push(dataDependency);
+            });
+
             result.data = data;
 
             return result;
           }
-        )
+        );
       },
       function () {
         return result;
