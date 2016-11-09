@@ -11,10 +11,18 @@ test('data', function (t) {
     function (results) {
       var awaited = {
         files: [
-          path.resolve('test/data/index.json')
+          path.resolve('test/data/index.data.js'),
+          path.resolve('test/data/other.data.js'),
+          path.resolve('test/data/sub/index.data.js')
         ],
         data: {
-          content: "Lorem ipsum"
+          content: "Lorem ipsum",
+          otherData: {
+            content: "Dolor sit amet",
+            otherData: {
+              content: "Consectetur adipiscing elit"
+            }
+          }
         }
       };
 
