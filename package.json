@@ -10,7 +10,7 @@
   "dependencies": {
     "fs-extra": "^0.30.0",
     "promise": "^7.1.1",
-    "twig": "^0.9.5"
+    "twig": "^0.10.0"
   },
   "repository": "ericmorand/stromboli-plugin-twig",
   "license": "Apache-2.0",
