@@ -112,42 +112,53 @@ class Plugin {
 
     return that.exists(dataFile).then(
       function () {
+        // retrieve data dependencies
+        var getDataDependencies = function (file, results) {
+          if (file) {
+            return required(file).then(
+              function (deps) {
+                results.push(file);
+
+                var promises = [];
+
+                deps.forEach(function (dep) {
+                  results.push(dep.filename);
+
+                  if (dep.deps) {
+                    dep.deps.forEach(function (subDep) {
+                      promises.push(getDataDependencies(subDep.filename, results));
+                    });
+                  }
+                });
+
+                return new Promise.all(promises);
+              }
+            )
+          }
+          else {
+            return true;
+          }
+        };
+
         delete require.cache[dataFile];
 
         var data = require(dataFile);
 
-        // retrieve data dependencies
-        var getDataDependencies = function(file, results) {
-          return required(file).then(
-            function(deps) {
-              results.push(file);
+        return Promise.resolve(data).then(
+          function (data) {
+            var dataDependencies = [];
 
-              var promises = [];
-
-              deps.forEach(function(dep) {
-                results.push(dep.filename);
-
-                dep.deps.forEach(function(subDep) {
-                  promises.push(getDataDependencies(subDep.filename, results));
+            return getDataDependencies(dataFile, dataDependencies).then(
+              function () {
+                dataDependencies.forEach(function (dataDependency) {
+                  result.files.push(dataDependency);
                 });
-              });
 
-              return new Promise.all(promises);
-            }
-          )
-        };
+                result.data = data;
 
-        var dataDependencies = [];
-
-        return getDataDependencies(dataFile, dataDependencies).then(
-          function() {
-            dataDependencies.forEach(function(dataDependency) {
-              result.files.push(dataDependency);
-            });
-
-            result.data = data;
-
-            return result;
+                return result;
+              }
+            );
           }
         );
       },
