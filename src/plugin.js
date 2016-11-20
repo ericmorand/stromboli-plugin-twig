@@ -150,22 +150,37 @@ class Plugin {
 
               _results.push(_file);
 
-              template.tokens.forEach(function (token) {
+              var processToken = function(token, promises) {
                 if (token.type == 'logic') {
                   token = token.token;
 
-                  if (token.type == 'Twig.logic.type.include') {
-                    var stack = token.stack;
+                  switch (token.type) {
+                    case 'Twig.logic.type.include': {
+                      var stack = token.stack;
 
-                    stack.forEach(function (stackEntry) {
-                      var dep = path.resolve(path.dirname(_file), stackEntry.value);
+                      stack.forEach(function (stackEntry) {
+                        var dep = path.resolve(path.dirname(_file), stackEntry.value);
 
-                      if (_results.indexOf(dep) < 0) {
-                        promises.push(resolveDependencies(dep, _results))
-                      }
-                    });
+                        if (_results.indexOf(dep) < 0) {
+                          promises.push(resolveDependencies(dep, _results))
+                        }
+                      });
+
+                      break;
+                    }
+                    case 'Twig.logic.type.for': {
+                      token.output.forEach(function(token) {
+                        processToken(token, promises);
+                      });
+
+                      break;
+                    }
                   }
                 }
+              };
+
+              template.tokens.forEach(function (token) {
+                processToken(token, promises);
               });
 
               return Promise.all(promises);
