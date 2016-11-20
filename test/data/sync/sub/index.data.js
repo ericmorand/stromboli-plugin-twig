@@ -1,3 +1,6 @@
 module.exports = {
-  content: "Consectetur adipiscing elit"
+  deps: [],
+  data: {
+    content: "Consectetur adipiscing elit"
+  }
 };
