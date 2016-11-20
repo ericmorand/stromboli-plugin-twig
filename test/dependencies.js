@@ -42,3 +42,16 @@ test('circular dependencies', function (t) {
     }
   );
 });
+
+test('dependencies inside loop', function (t) {
+  t.plan(1);
+
+  return plugin.getDependencies(path.resolve('test/dependencies/loop/index.twig')).then(
+    function (results) {
+      t.equal(results.length, 2);
+    },
+    function (err) {
+      t.fail(err);
+    }
+  );
+});
