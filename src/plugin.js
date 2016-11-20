@@ -4,7 +4,6 @@ const path = require('path');
 const Promise = require('promise');
 const fsStat = Promise.denodeify(fs.stat);
 const fsReadFile = Promise.denodeify(fs.readFile);
-const required = Promise.denodeify(require('required'));
 
 class Plugin {
   /**
