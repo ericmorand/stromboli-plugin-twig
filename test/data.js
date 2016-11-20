@@ -40,16 +40,21 @@ test('data async', function (t) {
   return plugin.getTemplateData(path.resolve('test/data/async/index.twig')).then(
     function (results) {
       var awaited = {
-        content: "Lorem ipsum",
-        otherData: {
-          content: "Dolor sit amet",
+        files: [
+          path.resolve('test/data/async/index.data.js'),
+        ],
+        data: {
+          content: "Lorem ipsum",
           otherData: {
-            content: "Consectetur adipiscing elit"
+            content: "Dolor sit amet",
+            otherData: {
+              content: "Consectetur adipiscing elit"
+            }
           }
         }
       };
 
-      t.same(results.data, awaited);
+      t.same(results, awaited);
     },
     function (err) {
       t.fail(err.message);
