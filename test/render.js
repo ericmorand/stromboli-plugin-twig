@@ -55,12 +55,26 @@ test('render with error', function (t) {
 
   return plugin.render(path.resolve('test/render/error/index.twig'), renderResult).then(
     function(renderResult) {
-      console.log(renderResult);
-
       t.fail();
     },
     function(err) {
       t.pass(err);
+    }
+  );
+});
+
+test('render with data error', function (t) {
+  // data file should be returned as a dependency even if it throws an exception
+  t.plan(1);
+
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/data-error/index.twig'), renderResult).then(
+    function(renderResult) {
+      t.fail();
+    },
+    function(err) {
+      t.equal(renderResult.getDependencies().size, 2);
     }
   );
 });
