@@ -86,6 +86,11 @@ class Plugin {
                   var binary = template.render(result.data);
 
                   renderResult.addBinary('index.html', binary);
+                },
+                function (result) {
+                  renderResult.addDependency(result.file);
+
+                  return Promise.reject(result.err);
                 }
               );
             }
@@ -111,14 +116,22 @@ class Plugin {
 
     return that.exists(dataFile).then(
       function () {
+        result.files.push(dataFile);
+
         delete require.cache[dataFile];
 
-        var data = require(dataFile);
+        try {
+          var data = require(dataFile);
+        }
+        catch (err) {
+          return Promise.reject({
+            err: err,
+            file: dataFile
+          });
+        }
 
         return Promise.resolve(data).then(
           function (data) {
-            result.files.push(dataFile);
-
             if (data.data && data.deps) {
               result.data = data.data;
               result.files = result.files.concat(data.deps);
@@ -149,7 +162,7 @@ class Plugin {
 
               _results.push(_file);
 
-              var processToken = function(token, promises) {
+              var processToken = function (token, promises) {
                 if (token.type == 'logic') {
                   token = token.token;
 
@@ -168,7 +181,7 @@ class Plugin {
                       break;
                     }
                     case 'Twig.logic.type.for': {
-                      token.output.forEach(function(token) {
+                      token.output.forEach(function (token) {
                         processToken(token, promises);
                       });
 
