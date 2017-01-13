@@ -4,7 +4,7 @@ const test = require('tap').test;
 const path = require('path');
 const fs = require('fs');
 
-var plugin = new Plugin({}, 'twig', 'index.twig');
+var plugin = new Plugin();
 
 test('render without data', function (t) {
   t.plan(3);
@@ -75,6 +75,40 @@ test('render with data error', function (t) {
     },
     function(err) {
       t.equal(renderResult.getDependencies().size, 2);
+    }
+  );
+});
+
+test('render without output', function (t) {
+  t.plan(1);
+
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/basic/index.twig'), renderResult).then(
+    function(renderResult) {
+      var binaries = renderResult.getBinaries();
+
+      t.equal(binaries[0].name, 'index.html');
+    },
+    function(err) {
+      t.fail(err);
+    }
+  );
+});
+
+test('render with output', function (t) {
+  t.plan(1);
+
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/basic/index.twig'), renderResult, 'custom.html').then(
+    function(renderResult) {
+      var binaries = renderResult.getBinaries();
+
+      t.equal(binaries[0].name, 'custom.html');
+    },
+    function(err) {
+      t.fail(err);
     }
   );
 });

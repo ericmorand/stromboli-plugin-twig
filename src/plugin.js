@@ -59,10 +59,15 @@ class Plugin {
    *
    * @param file {String}
    * @param renderResult {StromboliRenderResult}
+   * @param output {String}
    * @returns {Promise}
    */
-  render(file, renderResult) {
+  render(file, renderResult, output) {
     var that = this;
+
+    if (!output) {
+      output = 'index.html';
+    }
 
     // retrieve dependencies and render the template
     return Promise.all([
@@ -85,7 +90,7 @@ class Plugin {
 
                   var binary = template.render(result.data);
 
-                  renderResult.addBinary('index.html', binary);
+                  renderResult.addBinary(output, binary);
                 },
                 function (result) {
                   renderResult.addDependency(result.file);
