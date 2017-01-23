@@ -112,3 +112,30 @@ test('render with output', function (t) {
     }
   );
 });
+
+test('render with namespaces', function (t) {
+  t.plan(3);
+
+  var plugin = new Plugin({
+    namespaces: {
+      dummy: path.resolve('test/render/namespace/dummy')
+    }
+  });
+
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/namespace/index.twig'), renderResult).then(
+    function(renderResult) {
+      t.equal(renderResult.getDependencies().size, 3);
+      t.equal(renderResult.getBinaries().length, 1);
+
+      var render = renderResult.getBinaries()[0].data;
+      var expected = '<div>partial-1</div><div>partial-2</div>';
+
+      t.same(render, expected);
+    },
+    function(err) {
+      t.fail(err);
+    }
+  );
+});

@@ -29,30 +29,31 @@ class Plugin {
         }
       )
     };
+  }
 
-    this._twig = function (file) {
-      var that = this;
+  compile(file) {
+    var that = this;
 
-      return new Promise(function (fulfill, reject) {
-        var twig = that.twig;
+    return new Promise(function (fulfill, reject) {
+      var twig = that.twig;
 
-        twig.cache(false);
+      twig.cache(false);
 
-        try {
-          twig.twig({
-            path: file,
-            rethrow: true,
-            async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
-            load: function (template) {
-              fulfill(template)
-            }
-          });
-        }
-        catch (err) {
-          reject(err);
-        }
-      });
-    };
+      try {
+        twig.twig({
+          path: file,
+          namespaces: that.config ? that.config.namespaces : null,
+          rethrow: true,
+          async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
+          load: function (template) {
+            fulfill(template)
+          }
+        });
+      }
+      catch (err) {
+        reject(err);
+      }
+    });
   }
 
   /**
@@ -70,150 +71,152 @@ class Plugin {
     }
 
     // retrieve dependencies and render the template
-    return Promise.all([
-      that.getDependencies(file).then(
-        function (dependencies) {
-          dependencies.forEach(function (dependency) {
-            renderResult.addDependency(dependency);
-          });
-        }
-      ),
-      fsReadFile(file).then(
-        function () {
-          return that._twig(file).then(
-            function (template) {
-              return that.getTemplateData(file).then(
-                function (result) {
-                  result.files.forEach(function (file) {
-                    renderResult.addDependency(file);
-                  });
+    return that.compile(file).then(
+      function (template) {
+        return Promise.all(
+          [
+            that.getDependencies(template).then(
+              function (dependencies) {
+                dependencies.forEach(function (dependency) {
+                  renderResult.addDependency(dependency);
+                });
 
-                  var binary = template.render(result.data);
+                return renderResult;
+              }
+            ),
+            that.getData(template).then(
+              function (result) {
+                result.files.forEach(function (file) {
+                  renderResult.addDependency(file);
+                });
 
-                  renderResult.addBinary(output, binary);
-                },
-                function (result) {
-                  renderResult.addDependency(result.file);
+                var binary = template.render(result.data);
 
-                  return Promise.reject(result.err);
-                }
-              );
-            }
-          )
-        }
-      )
-    ]).then(
-      function () {
-        return renderResult;
-      }
-    );
-  }
+                renderResult.addBinary(output, binary);
 
-  getTemplateData(file) {
-    var that = this;
-    var extension = path.extname(file);
-    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
+                return renderResult;
+              },
+              function (result) {
+                renderResult.addDependency(result.file);
 
-    var result = {
-      files: [],
-      data: null
-    };
-
-    return that.exists(dataFile).then(
-      function () {
-        result.files.push(dataFile);
-
-        delete require.cache[dataFile];
-
-        try {
-          var data = require(dataFile);
-        }
-        catch (err) {
-          return Promise.reject({
-            err: err,
-            file: dataFile
-          });
-        }
-
-        return Promise.resolve(data).then(
-          function (data) {
-            if (data.data && data.deps) {
-              result.data = data.data;
-              result.files = result.files.concat(data.deps);
-            }
-            else {
-              result.data = data;
-            }
-
-            return result;
+                return Promise.reject(result.err);
+              }
+            )
+          ]
+        ).then(
+          function () {
+            return renderResult;
           }
-        );
-      },
-      function () {
-        return result;
+        )
       }
-    );
+    )
   }
 
-  getDependencies(file) {
+  getData(template) {
+  var that = this;
+  var file = template.path;
+  var extension = path.extname(file);
+  var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
+
+  var result = {
+    files: [],
+    data: null
+  };
+
+  return that.exists(dataFile).then(
+    function () {
+      result.files.push(dataFile);
+
+      delete require.cache[dataFile];
+
+      try {
+        var data = require(dataFile);
+      }
+      catch (err) {
+        return Promise.reject({
+          err: err,
+          file: dataFile
+        });
+      }
+
+      return Promise.resolve(data).then(
+        function (data) {
+          if (data.data && data.deps) {
+            result.data = data.data;
+            result.files = result.files.concat(data.deps);
+          }
+          else {
+            result.data = data;
+          }
+
+          return result;
+        }
+      );
+    },
+    function () {
+      return result;
+    }
+  );
+}
+
+  getDependencies(template) {
     var that = this;
 
-    var resolveDependencies = function (_file, _results) {
-      return that.exists(_file).then(
-        function () {
-          return that._twig(_file).then(
-            function (template) {
-              var promises = [];
+    var resolveDependencies = function (_template, _results) {
+      var promises = [];
 
-              _results.push(_file);
+      var processToken = function (token, promises) {
+        if (token.type == 'logic') {
+          token = token.token;
 
-              var processToken = function (token, promises) {
-                if (token.type == 'logic') {
-                  token = token.token;
+          switch (token.type) {
+            case 'Twig.logic.type.include': {
+              var stack = token.stack;
 
-                  switch (token.type) {
-                    case 'Twig.logic.type.include': {
-                      var stack = token.stack;
+              stack.forEach(function (stackEntry) {
+                var dep = that.twig.path.parsePath(_template, stackEntry.value);
 
-                      stack.forEach(function (stackEntry) {
-                        var dep = path.resolve(path.dirname(_file), stackEntry.value);
-
-                        if (_results.indexOf(dep) < 0) {
-                          promises.push(resolveDependencies(dep, _results))
-                        }
-                      });
-
-                      break;
+                if (_results.indexOf(dep) < 0) {
+                  promises.push(that.compile(dep).then(
+                    function (__template) {
+                      return resolveDependencies(__template, _results);
+                    },
+                    function (err) {
+                      // we don't care if the file could not be compiled into a template
                     }
-                    case 'Twig.logic.type.for': {
-                      token.output.forEach(function (token) {
-                        processToken(token, promises);
-                      });
-
-                      break;
-                    }
-                  }
+                  ))
                 }
-              };
+              });
 
-              template.tokens.forEach(function (token) {
+              break;
+            }
+            case 'Twig.logic.type.for': {
+              token.output.forEach(function (token) {
                 processToken(token, promises);
               });
 
-              return Promise.all(promises);
+              break;
             }
-          );
-        },
-        function () {
-          return true;
-        }).then(
-        function () {
-          return _results;
+          }
         }
-      );
+      };
+
+      _results.push(_template.path);
+
+      _template.tokens.forEach(function (token) {
+        processToken(token, promises);
+      });
+
+      return Promise.all(promises);
     };
 
-    return resolveDependencies(file, []);
+    var results = [];
+
+    return resolveDependencies(template, results).then(
+      function () {
+        return results;
+      }
+    );
   }
 }
 
