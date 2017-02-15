@@ -190,7 +190,8 @@ class Plugin {
 
               break;
             }
-            case 'Twig.logic.type.for': {
+            case 'Twig.logic.type.for':
+            case 'Twig.logic.type.macro': {
               token.output.forEach(function (token) {
                 processToken(token, promises);
               });
