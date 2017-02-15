@@ -71,3 +71,20 @@ test('dependencies inside loop', function (t) {
     }
   );
 });
+
+test('dependencies inside macro', function (t) {
+  t.plan(1);
+
+  return plugin.compile(path.resolve('test/dependencies/macro/index.twig')).then(
+    function (template) {
+      return plugin.getDependencies(template).then(
+        function (results) {
+          t.equal(results.length, 3);
+        },
+        function (err) {
+          t.fail(err);
+        }
+      );
+    }
+  );
+});
