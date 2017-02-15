@@ -139,3 +139,24 @@ test('render with namespaces', function (t) {
     }
   );
 });
+
+test('render with data as function', function (t) {
+  t.plan(3);
+
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/data-as-function/index.twig'), renderResult).then(
+    function(renderResult) {
+      t.equal(renderResult.getDependencies().size, 2);
+      t.equal(renderResult.getBinaries().length, 1);
+
+      var render = renderResult.getBinaries()[0].data;
+      var expected = '<div class="bar">Dummy</div>';
+
+      t.same(render, expected);
+    },
+    function(err) {
+      t.fail(err);
+    }
+  );
+});

@@ -113,51 +113,55 @@ class Plugin {
   }
 
   getData(template) {
-  var that = this;
-  var file = template.path;
-  var extension = path.extname(file);
-  var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
+    var that = this;
+    var file = template.path;
+    var extension = path.extname(file);
+    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
 
-  var result = {
-    files: [],
-    data: null
-  };
+    var result = {
+      files: [],
+      data: null
+    };
 
-  return that.exists(dataFile).then(
-    function () {
-      result.files.push(dataFile);
+    return that.exists(dataFile).then(
+      function () {
+        result.files.push(dataFile);
 
-      delete require.cache[dataFile];
+        delete require.cache[dataFile];
 
-      try {
-        var data = require(dataFile);
-      }
-      catch (err) {
-        return Promise.reject({
-          err: err,
-          file: dataFile
-        });
-      }
-
-      return Promise.resolve(data).then(
-        function (data) {
-          if (data.data && data.deps) {
-            result.data = data.data;
-            result.files = result.files.concat(data.deps);
-          }
-          else {
-            result.data = data;
-          }
-
-          return result;
+        try {
+          var data = require(dataFile);
         }
-      );
-    },
-    function () {
-      return result;
-    }
-  );
-}
+        catch (err) {
+          return Promise.reject({
+            err: err,
+            file: dataFile
+          });
+        }
+
+        if (typeof data === 'function') {
+          data = data(that);
+        }
+
+        return Promise.resolve(data).then(
+          function (data) {
+            if (data.data && data.deps) {
+              result.data = data.data;
+              result.files = result.files.concat(data.deps);
+            }
+            else {
+              result.data = data;
+            }
+
+            return result;
+          }
+        );
+      },
+      function () {
+        return result;
+      }
+    );
+  }
 
   getDependencies(template) {
     var that = this;
