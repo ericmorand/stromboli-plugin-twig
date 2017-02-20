@@ -125,7 +125,18 @@ class Plugin {
     return that.exists(dataFile).then(
       function () {
         return new Promise(function (fulfill, reject) {
-          delete require.cache[dataFile];
+          var deleteRequireCache = function (id) {
+            var files = require.cache[id];
+            if (typeof files !== 'undefined') {
+              for (var i in files.children) {
+                deleteRequireCache(files.children[i].id);
+              }
+
+              delete require.cache[id];
+            }
+          };
+
+          deleteRequireCache(dataFile);
 
           try {
             var data = require(dataFile);
