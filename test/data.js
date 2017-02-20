@@ -94,3 +94,25 @@ test('missing data', function (t) {
     }
   );
 });
+
+test('data cache', function (t) {
+  t.plan(1);
+
+  return plugin.compile(path.resolve('test/data/cache/index.twig')).then(
+    function (template) {
+      return plugin.getData(template).then(
+        function (results) {
+          return plugin.compile(path.resolve('test/data/cache/index.twig')).then(
+            function (template) {
+              return plugin.getData(template).then(
+                function (results) {
+                  t.same(results.data, 1);
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+});
