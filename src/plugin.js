@@ -3,7 +3,6 @@ const path = require('path');
 
 const Promise = require('promise');
 const fsStat = Promise.denodeify(fs.stat);
-const fsReadFile = Promise.denodeify(fs.readFile);
 
 class Plugin {
   /**
@@ -125,37 +124,55 @@ class Plugin {
 
     return that.exists(dataFile).then(
       function () {
-        result.files.push(dataFile);
+        return new Promise(function (fulfill, reject) {
+          delete require.cache[dataFile];
 
-        delete require.cache[dataFile];
-
-        try {
-          var data = require(dataFile);
-        }
-        catch (err) {
-          return Promise.reject({
-            err: err,
-            file: dataFile
-          });
-        }
-
-        if (typeof data === 'function') {
-          data = data(that);
-        }
-
-        return Promise.resolve(data).then(
-          function (data) {
-            if (data.data && data.deps) {
-              result.data = data.data;
-              result.files = result.files.concat(data.deps);
-            }
-            else {
-              result.data = data;
-            }
-
-            return result;
+          try {
+            var data = require(dataFile);
           }
-        );
+          catch (err) {
+            reject({
+              err: err,
+              file: dataFile
+            });
+          }
+
+          var mdeps = require('module-deps');
+
+          var md = mdeps({
+            postFilter: function (id, file, pkg) {
+              // remove external dependencies
+              var regexp = process.platform === 'win32' ? /^(\.|\w:)/ : /^[\/.]/;
+
+              return regexp.test(id);
+            }
+          });
+
+          md.on('data', function (data) {
+            result.files.push(data.id);
+          });
+
+          md.on('end', function (d) {
+            result.files.reverse();
+
+            if (typeof data === 'function') {
+              data = data(that);
+            }
+
+            return Promise.resolve(data).then(
+              function (data) {
+                result.data = data;
+
+                fulfill(result);
+              }
+            );
+          });
+
+          md.end({
+            file: dataFile,
+            entry: true
+          });
+        });
       },
       function () {
         return result;
