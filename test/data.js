@@ -11,7 +11,7 @@ test('data sync', function (t) {
     function (template) {
       return plugin.getData(template).then(
         function (results) {
-          var awaited = {
+          var wanted = {
             files: [
               path.resolve('test/data/sync/index.data.js'),
               path.resolve('test/data/sync/other.data.js'),
@@ -28,7 +28,7 @@ test('data sync', function (t) {
             }
           };
 
-          t.same(results, awaited);
+          t.same(results, wanted);
         },
         function (err) {
           t.fail(err.message);
@@ -45,9 +45,11 @@ test('data async', function (t) {
     function (template) {
       return plugin.getData(template).then(
         function (results) {
-          var awaited = {
+          var wanted = {
             files: [
               path.resolve('test/data/async/index.data.js'),
+              path.resolve('test/data/async/other.data.js'),
+              path.resolve('test/data/async/sub/index.data.js')
             ],
             data: {
               content: "Lorem ipsum",
@@ -60,7 +62,7 @@ test('data async', function (t) {
             }
           };
 
-          t.same(results, awaited);
+          t.same(results, wanted);
         },
         function (err) {
           t.fail(err.message);
@@ -78,12 +80,12 @@ test('missing data', function (t) {
     function (template) {
       return plugin.getData(template).then(
         function (results) {
-          var awaited = {
+          var wanted = {
             files: [],
             data: null
           };
 
-          t.same(results, awaited);
+          t.same(results, wanted);
         },
         function (err) {
           t.fail(err.message);

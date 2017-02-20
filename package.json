@@ -4,11 +4,13 @@
   "description": "",
   "main": "src/plugin.js",
   "scripts": {
+    "pretest": "npm prune && npm update",
     "test": "tap test/*.js --cov"
   },
   "author": "Eric MORAND",
   "dependencies": {
-    "fs-extra": "^0.30.0",
+    "fs-extra": "^2.0.0",
+    "module-deps": "^4.1.1",
     "promise": "^7.1.1",
     "twig": "^0.10.0"
   },
@@ -16,7 +18,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "promise": "^7.1.1",
-    "stromboli": "^0.4.0",
+    "stromboli": "^0.9.0",
     "tap": "^7.1.2"
   }
 }
