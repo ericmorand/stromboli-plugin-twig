@@ -202,7 +202,8 @@ class Plugin {
           token = token.token;
 
           switch (token.type) {
-            case 'Twig.logic.type.include': {
+            case 'Twig.logic.type.include':
+            case 'Twig.logic.type.import': {
               var stack = token.stack;
 
               stack.forEach(function (stackEntry) {
