@@ -224,7 +224,8 @@ class Plugin {
               break;
             }
             case 'Twig.logic.type.for':
-            case 'Twig.logic.type.macro': {
+            case 'Twig.logic.type.macro':
+            case 'Twig.logic.type.setcapture': {
               token.output.forEach(function (token) {
                 processToken(token, promises);
               });

@@ -11,7 +11,7 @@ test('dependencies', function (t) {
     function (template) {
       return plugin.getDependencies(template).then(
         function (results) {
-          t.equal(results.length, 5);
+          t.equal(results.length, 6);
         },
         function (err) {
           t.fail(err);
