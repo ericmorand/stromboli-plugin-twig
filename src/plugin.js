@@ -81,6 +81,9 @@ class Plugin {
                 });
 
                 return renderResult;
+              },
+              function (err) {
+                return Promise.reject(err);
               }
             ),
             that.getData(template).then(
@@ -95,10 +98,8 @@ class Plugin {
 
                 return renderResult;
               },
-              function (result) {
-                renderResult.addDependency(result.file);
-
-                return Promise.reject(result.err);
+              function (err) {
+                return Promise.reject(err);
               }
             )
           ]
@@ -143,8 +144,8 @@ class Plugin {
           }
           catch (err) {
             reject({
-              err: err,
-              file: dataFile
+              file: dataFile,
+              message: err
             });
           }
 
@@ -209,15 +210,28 @@ class Plugin {
               stack.forEach(function (stackEntry) {
                 var dep = that.twig.path.parsePath(_template, stackEntry.value);
 
-                if (_results.indexOf(dep) < 0) {
-                  promises.push(that.compile(dep).then(
-                    function (__template) {
-                      return resolveDependencies(__template, _results);
-                    },
-                    function (err) {
-                      // we don't care if the file could not be compiled into a template
-                    }
-                  ))
+                try {
+                  fs.statSync(dep);
+
+                  if (_results.indexOf(dep) < 0) {
+                    promises.push(that.compile(dep).then(
+                      function (__template) {
+                        return resolveDependencies(__template, _results);
+                      },
+                      function (err) {
+                        return Promise.reject({
+                          file: dep,
+                          message: err.message
+                        });
+                      }
+                    ))
+                  }
+                }
+                catch (err) {
+                  promises.push(Promise.reject({
+                    file: dep,
+                    message: err
+                  }));
                 }
               });
 
