@@ -49,8 +49,6 @@ test('render with data', function (t) {
 });
 
 test('render with error', function (t) {
-  t.plan(1);
-
   var renderResult = new RenderResult();
 
   return plugin.render(path.resolve('test/render/error/index.twig'), renderResult).then(
@@ -58,15 +56,13 @@ test('render with error', function (t) {
       t.fail();
     },
     function(err) {
-      t.pass(err);
+      t.equal(err.file, path.resolve('test/render/error/partial.twig'));
+      t.ok(err.message);
     }
   );
 });
 
 test('render with data error', function (t) {
-  // data file should be returned as a dependency even if it throws an exception
-  t.plan(1);
-
   var renderResult = new RenderResult();
 
   return plugin.render(path.resolve('test/render/data-error/index.twig'), renderResult).then(
@@ -74,7 +70,8 @@ test('render with data error', function (t) {
       t.fail();
     },
     function(err) {
-      t.equal(renderResult.getDependencies().size, 2);
+      t.equal(err.file, path.resolve('test/render/data-error/index.data.js'));
+      t.ok(err.message);
     }
   );
 });

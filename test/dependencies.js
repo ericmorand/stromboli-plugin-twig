@@ -11,7 +11,7 @@ test('dependencies', function (t) {
     function (template) {
       return plugin.getDependencies(template).then(
         function (results) {
-          t.equal(results.length, 5);
+          t.equal(results.length, 6);
         },
         function (err) {
           t.fail(err);
@@ -22,16 +22,15 @@ test('dependencies', function (t) {
 });
 
 test('missing dependencies', function (t) {
-  t.plan(1);
-
   return plugin.compile(path.resolve('test/dependencies/missing/index.twig')).then(
     function (template) {
       return plugin.getDependencies(template).then(
         function (results) {
-          t.equal(results.length, 2);
+          t.fail();
         },
         function (err) {
-          t.fail(err.message);
+          t.equal(err.file, path.resolve('test/dependencies/missing/missing.twig'));
+          t.ok(err.message);
         }
       );
     }
