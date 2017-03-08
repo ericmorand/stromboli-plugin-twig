@@ -151,20 +151,13 @@ class Plugin {
 
           var mdeps = require('module-deps');
 
-          var md = mdeps({
-            postFilter: function (id, file, pkg) {
-              // remove external dependencies
-              var regexp = process.platform === 'win32' ? /^(\.|\w:)/ : /^[\/.]/;
-
-              return regexp.test(id);
-            }
-          });
+          var md = mdeps();
 
           md.on('data', function (data) {
             result.files.push(data.id);
           });
 
-          md.on('end', function (d) {
+          md.on('end', function () {
             result.files.reverse();
 
             if (typeof data === 'function') {

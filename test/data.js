@@ -39,8 +39,6 @@ test('data sync', function (t) {
 });
 
 test('data async', function (t) {
-  t.plan(1);
-
   return plugin.compile(path.resolve('test/data/async/index.twig')).then(
     function (template) {
       return plugin.getData(template).then(
@@ -62,7 +60,11 @@ test('data async', function (t) {
             }
           };
 
-          t.same(results, wanted);
+          wanted.files.forEach(function(wantedFile) {
+            t.true(results.files.indexOf(wantedFile) > -1);
+          });
+
+          t.same(results.data, wanted.data);
         },
         function (err) {
           t.fail(err.message);
