@@ -75,18 +75,24 @@ class Plugin {
     // retrieve dependencies and render the template
     return that.compile(file).then(
       function (template) {
+        let updateRenderResult = function(dependencies) {
+          dependencies.forEach(function (dependency) {
+            renderResult.addDependency(dependency);
+          });
+        };
+
         return Promise.all(
           [
             that.getDependencies(template).then(
               function (dependencies) {
-                dependencies.forEach(function (dependency) {
-                  renderResult.addDependency(dependency);
-                });
+                updateRenderResult(dependencies);
 
                 return renderResult;
               },
-              function (err) {
-                return Promise.reject(err);
+              function (result) {
+                updateRenderResult(result.dependencies);
+
+                return Promise.reject(result.error);
               }
             ),
             that.getData(template).then(
@@ -222,7 +228,7 @@ class Plugin {
                     catch (err) {
                       promises.push(Promise.reject({
                         file: dep,
-                        message: err
+                        message: err.message
                       }));
                     }
 
@@ -259,6 +265,12 @@ class Plugin {
     return resolveDependencies(template, results).then(
       function () {
         return results;
+      },
+      function (err) {
+        return Promise.reject({
+          dependencies: results,
+          error: err
+        });
       }
     );
   }
