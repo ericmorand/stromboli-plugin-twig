@@ -208,30 +208,35 @@ class Plugin {
               var stack = token.stack;
 
               stack.forEach(function (stackEntry) {
-                var dep = that.twig.path.parsePath(_template, stackEntry.value);
+                switch (stackEntry.type) {
+                  case 'Twig.expression.type.string':
+                    var dep = that.twig.path.parsePath(_template, stackEntry.value);
 
-                try {
-                  fs.statSync(dep);
+                    try {
+                      fs.statSync(dep);
 
-                  if (_results.indexOf(dep) < 0) {
-                    promises.push(that.compile(dep).then(
-                      function (__template) {
-                        return resolveDependencies(__template, _results);
-                      },
-                      function (err) {
-                        return Promise.reject({
-                          file: dep,
-                          message: err.message
-                        });
+                      if (_results.indexOf(dep) < 0) {
+                        promises.push(that.compile(dep).then(
+                          function (__template) {
+                            return resolveDependencies(__template, _results);
+                          },
+                          function (err) {
+                            return Promise.reject({
+                              file: dep,
+                              message: err.message
+                            });
+                          }
+                        ))
                       }
-                    ))
-                  }
-                }
-                catch (err) {
-                  promises.push(Promise.reject({
-                    file: dep,
-                    message: err
-                  }));
+                    }
+                    catch (err) {
+                      promises.push(Promise.reject({
+                        file: dep,
+                        message: err
+                      }));
+                    }
+
+                    break;
                 }
               });
 
