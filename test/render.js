@@ -52,12 +52,11 @@ test('render with error', function (t) {
   var renderResult = new RenderResult();
 
   return plugin.render(path.resolve('test/render/error/index.twig'), renderResult).then(
-    function(renderResult) {
+    function() {
       t.fail();
     },
-    function(err) {
-      t.equal(err.file, path.resolve('test/render/error/index.twig'));
-      t.ok(err.message);
+    function() {
+      t.equal(renderResult.getDependencies().size, 0);
     }
   );
 });
@@ -66,12 +65,24 @@ test('render with error in partial', function (t) {
   var renderResult = new RenderResult();
 
   return plugin.render(path.resolve('test/render/error-in-partial/index.twig'), renderResult).then(
-    function(renderResult) {
+    function() {
       t.fail();
     },
-    function(err) {
-      t.equal(err.file, path.resolve('test/render/error-in-partial/partial.twig'));
-      t.ok(err.message);
+    function() {
+      t.equal(renderResult.getDependencies().size, 1);
+    }
+  );
+});
+
+test('render with missing partial', function (t) {
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/missing-partial/index.twig'), renderResult).then(
+    function() {
+      t.fail();
+    },
+    function() {
+      t.equal(renderResult.getDependencies().size, 1);
     }
   );
 });
@@ -80,12 +91,11 @@ test('render with data error', function (t) {
   var renderResult = new RenderResult();
 
   return plugin.render(path.resolve('test/render/data-error/index.twig'), renderResult).then(
-    function(renderResult) {
+    function() {
       t.fail();
     },
-    function(err) {
-      t.equal(err.file, path.resolve('test/render/data-error/index.data.js'));
-      t.ok(err.message);
+    function() {
+      t.pass();
     }
   );
 });
