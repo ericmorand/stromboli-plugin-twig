@@ -13,7 +13,7 @@ test('data sync', function (t) {
         function (results) {
           var wanted = {
             files: [
-              path.resolve('test/data/sync/index.data.js'),
+              path.resolve('test/data/sync/index.twig.data.js'),
               path.resolve('test/data/sync/other.data.js'),
               path.resolve('test/data/sync/sub/index.data.js')
             ],
@@ -45,7 +45,7 @@ test('data async', function (t) {
         function (results) {
           var wanted = {
             files: [
-              path.resolve('test/data/async/index.data.js'),
+              path.resolve('test/data/async/index.twig.data.js'),
               path.resolve('test/data/async/other.data.js'),
               path.resolve('test/data/async/sub/index.data.js')
             ],

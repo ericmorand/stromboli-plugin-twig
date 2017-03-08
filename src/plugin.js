@@ -61,23 +61,28 @@ class Plugin {
   /**
    *
    * @param file {String}
-   * @param renderResult {StromboliRenderResult}
    * @param output {String}
    * @returns {Promise}
    */
-  render(file, renderResult, output) {
+  render(file, output) {
     var that = this;
 
     if (!output) {
       output = 'index.html';
     }
 
+    let renderResult = {
+      binaries: [],
+      dependencies: [],
+      error: null
+    };
+
     // retrieve dependencies and render the template
     return that.compile(file).then(
       function (template) {
-        let updateRenderResult = function(dependencies) {
+        let updateRenderResult = function (dependencies) {
           dependencies.forEach(function (dependency) {
-            renderResult.addDependency(dependency);
+            renderResult.dependencies.push(dependency);
           });
         };
 
@@ -92,23 +97,30 @@ class Plugin {
               function (result) {
                 updateRenderResult(result.dependencies);
 
-                return Promise.reject(result.error);
+                renderResult.error = result.error;
+
+                return Promise.reject(renderResult);
               }
             ),
             that.getData(template).then(
               function (result) {
                 result.files.forEach(function (file) {
-                  renderResult.addDependency(file);
+                  renderResult.dependencies.push(file);
                 });
 
                 var binary = template.render(result.data);
 
-                renderResult.addBinary(output, binary);
+                renderResult.binaries.push({
+                  name: output,
+                  data: binary
+                });
 
                 return renderResult;
               },
               function (err) {
-                return Promise.reject(err);
+                renderResult.error = err;
+
+                return Promise.reject(renderResult);
               }
             )
           ]
@@ -117,6 +129,11 @@ class Plugin {
             return renderResult;
           }
         )
+      },
+      function (err) {
+        renderResult.error = err;
+
+        return Promise.reject(renderResult);
       }
     )
   }
@@ -125,7 +142,7 @@ class Plugin {
     var that = this;
     var file = template.path;
     var extension = path.extname(file);
-    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
+    var dataFile = path.join(path.dirname(file), path.basename(file) + '.data.js');
 
     var result = {
       files: [],

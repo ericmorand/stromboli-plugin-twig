@@ -1,5 +1,4 @@
 const Plugin = require('../src/plugin');
-const RenderResult = require('../node_modules/stromboli/lib/render-result.js');
 const test = require('tap').test;
 const path = require('path');
 const fs = require('fs');
@@ -9,14 +8,12 @@ var plugin = new Plugin();
 test('render without data', function (t) {
   t.plan(3);
 
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/basic/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/basic/index.twig')).then(
     function(renderResult) {
-      t.equal(renderResult.getDependencies().size, 2);
-      t.equal(renderResult.getBinaries().length, 1);
+      t.equal(renderResult.dependencies.length, 2);
+      t.equal(renderResult.binaries.length, 1);
 
-      var render = renderResult.getBinaries()[0].data;
+      var render = renderResult.binaries[0].data;
       var awaited = fs.readFileSync(path.resolve('test/render/basic/index.html')).toString();
 
       t.equal(render, awaited);
@@ -30,14 +27,12 @@ test('render without data', function (t) {
 test('render with data', function (t) {
   t.plan(3);
 
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/data/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/data/index.twig')).then(
     function(renderResult) {
-      t.equal(renderResult.getDependencies().size, 3);
-      t.equal(renderResult.getBinaries().length, 1);
+      t.equal(renderResult.dependencies.length, 3);
+      t.equal(renderResult.binaries.length, 1);
 
-      var render = renderResult.getBinaries()[0].data;
+      var render = renderResult.binaries[0].data;
       var awaited = '<div class="outer"><div class="inner">Lorem ipsum</div></div>';
 
       t.same(render, awaited);
@@ -49,48 +44,40 @@ test('render with data', function (t) {
 });
 
 test('render with error', function (t) {
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/error/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/error/index.twig')).then(
     function() {
       t.fail();
     },
-    function() {
-      t.equal(renderResult.getDependencies().size, 0);
+    function(renderResult) {
+      t.equal(renderResult.dependencies.length, 0);
     }
   );
 });
 
 test('render with error in partial', function (t) {
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/error-in-partial/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/error-in-partial/index.twig')).then(
     function() {
       t.fail();
     },
-    function() {
-      t.equal(renderResult.getDependencies().size, 1);
+    function(renderResult) {
+      t.equal(renderResult.dependencies.length, 1);
     }
   );
 });
 
 test('render with missing partial', function (t) {
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/missing-partial/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/missing-partial/index.twig')).then(
     function() {
       t.fail();
     },
-    function() {
-      t.equal(renderResult.getDependencies().size, 1);
+    function(renderResult) {
+      t.equal(renderResult.dependencies.length, 1);
     }
   );
 });
 
 test('render with data error', function (t) {
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/data-error/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/data-error/index.twig')).then(
     function() {
       t.fail();
     },
@@ -103,11 +90,9 @@ test('render with data error', function (t) {
 test('render without output', function (t) {
   t.plan(1);
 
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/basic/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/basic/index.twig')).then(
     function(renderResult) {
-      var binaries = renderResult.getBinaries();
+      var binaries = renderResult.binaries;
 
       t.equal(binaries[0].name, 'index.html');
     },
@@ -120,11 +105,9 @@ test('render without output', function (t) {
 test('render with output', function (t) {
   t.plan(1);
 
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/basic/index.twig'), renderResult, 'custom.html').then(
+  return plugin.render(path.resolve('test/render/basic/index.twig'), 'custom.html').then(
     function(renderResult) {
-      var binaries = renderResult.getBinaries();
+      var binaries = renderResult.binaries;
 
       t.equal(binaries[0].name, 'custom.html');
     },
@@ -143,14 +126,12 @@ test('render with namespaces', function (t) {
     }
   });
 
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/namespace/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/namespace/index.twig')).then(
     function(renderResult) {
-      t.equal(renderResult.getDependencies().size, 3);
-      t.equal(renderResult.getBinaries().length, 1);
+      t.equal(renderResult.dependencies.length, 3);
+      t.equal(renderResult.binaries.length, 1);
 
-      var render = renderResult.getBinaries()[0].data;
+      var render = renderResult.binaries[0].data;
       var expected = '<div>partial-1</div><div>partial-2</div>';
 
       t.same(render, expected);
@@ -164,14 +145,12 @@ test('render with namespaces', function (t) {
 test('render with data as function', function (t) {
   t.plan(3);
 
-  var renderResult = new RenderResult();
-
-  return plugin.render(path.resolve('test/render/data-as-function/index.twig'), renderResult).then(
+  return plugin.render(path.resolve('test/render/data-as-function/index.twig')).then(
     function(renderResult) {
-      t.equal(renderResult.getDependencies().size, 2);
-      t.equal(renderResult.getBinaries().length, 1);
+      t.equal(renderResult.dependencies.length, 2);
+      t.equal(renderResult.binaries.length, 1);
 
-      var render = renderResult.getBinaries()[0].data;
+      var render = renderResult.binaries[0].data;
       var expected = '<div class="bar">Dummy</div>';
 
       t.same(render, expected);
