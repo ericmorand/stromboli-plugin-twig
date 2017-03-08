@@ -50,7 +50,10 @@ class Plugin {
         });
       }
       catch (err) {
-        reject(err);
+        reject({
+          file: file,
+          message: err.message
+        });
       }
     });
   }
@@ -212,12 +215,6 @@ class Plugin {
                         promises.push(that.compile(dep).then(
                           function (__template) {
                             return resolveDependencies(__template, _results);
-                          },
-                          function (err) {
-                            return Promise.reject({
-                              file: dep,
-                              message: err.message
-                            });
                           }
                         ))
                       }

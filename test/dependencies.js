@@ -87,3 +87,19 @@ test('dependencies inside macro', function (t) {
     }
   );
 });
+
+test('dependencies with error', function (t) {
+  return plugin.compile(path.resolve('test/dependencies/error/index.twig')).then(
+    function (template) {
+      return plugin.getDependencies(template).then(
+        function (results) {
+          t.fail();
+        },
+        function (err) {
+          t.equal(err.file, path.resolve('test/dependencies/error/partial.twig'));
+          t.true(err.message);
+        }
+      );
+    }
+  );
+});
