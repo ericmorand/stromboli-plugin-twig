@@ -28,7 +28,12 @@ test('missing dependencies', function (t) {
         function (results) {
           t.fail();
         },
-        function (err) {
+        function (result) {
+          let err = result.error;
+          let dependencies = result.dependencies;
+
+          t.equal(dependencies.length, 3);
+
           t.equal(err.file, path.resolve('test/dependencies/missing/missing.twig'));
           t.ok(err.message);
         }
@@ -95,7 +100,11 @@ test('dependencies with error', function (t) {
         function (results) {
           t.fail();
         },
-        function (err) {
+        function (result) {
+          let err = result.error;
+          let dependencies = result.dependencies;
+
+          t.equal(dependencies.length, 1);
           t.equal(err.file, path.resolve('test/dependencies/error/partial.twig'));
           t.true(err.message);
         }
