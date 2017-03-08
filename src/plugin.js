@@ -142,7 +142,7 @@ class Plugin {
     var that = this;
     var file = template.path;
     var extension = path.extname(file);
-    var dataFile = path.join(path.dirname(file), path.basename(file, extension) + '.data.js');
+    var dataFile = path.join(path.dirname(file), path.basename(file) + '.data.js');
 
     var result = {
       files: [],
