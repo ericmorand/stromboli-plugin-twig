@@ -56,7 +56,21 @@ test('render with error', function (t) {
       t.fail();
     },
     function(err) {
-      t.equal(err.file, path.resolve('test/render/error/partial.twig'));
+      t.equal(err.file, path.resolve('test/render/error/index.twig'));
+      t.ok(err.message);
+    }
+  );
+});
+
+test('render with error in partial', function (t) {
+  var renderResult = new RenderResult();
+
+  return plugin.render(path.resolve('test/render/error-in-partial/index.twig'), renderResult).then(
+    function(renderResult) {
+      t.fail();
+    },
+    function(err) {
+      t.equal(err.file, path.resolve('test/render/error-in-partial/partial.twig'));
       t.ok(err.message);
     }
   );
