@@ -60,8 +60,6 @@ test('render with error in partial', function (t) {
       t.fail();
     },
     function(renderResult) {
-      console.log('>>>>>>>>>>>>>', renderResult);
-
       t.equal(renderResult.dependencies.length, 1);
     }
   );
@@ -78,13 +76,26 @@ test('render with missing partial', function (t) {
   );
 });
 
+test('render with data exception', function (t) {
+  return plugin.render(path.resolve('test/render/data-exception/index.twig')).then(
+    function() {
+      t.fail();
+    },
+    function(err) {
+      t.ok(err.error.message);
+      t.equal(err.error.file, path.resolve('test/render/data-exception/index.twig.data.js'));
+    }
+  );
+});
+
 test('render with data error', function (t) {
   return plugin.render(path.resolve('test/render/data-error/index.twig')).then(
     function() {
       t.fail();
     },
-    function() {
-      t.pass();
+    function(err) {
+      t.ok(err.error.message);
+      t.equal(err.error.file, path.resolve('test/render/data-error/index.twig.data.js'));
     }
   );
 });

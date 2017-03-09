@@ -98,3 +98,16 @@ test('data cache', function (t) {
     }
   );
 });
+
+test('data with error', function (t) {
+  t.plan(1);
+
+  return plugin.getData(path.resolve('test/data/error/index.twig')).then(
+    function () {
+      t.fail();
+    },
+    function (err) {
+      t.pass(err.message);
+    }
+  );
+});
