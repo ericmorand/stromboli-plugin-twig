@@ -76,13 +76,26 @@ test('render with missing partial', function (t) {
   );
 });
 
+test('render with data exception', function (t) {
+  return plugin.render(path.resolve('test/render/data-exception/index.twig')).then(
+    function() {
+      t.fail();
+    },
+    function(err) {
+      t.ok(err.error.message);
+      t.equal(err.error.file, path.resolve('test/render/data-exception/index.twig.data.js'));
+    }
+  );
+});
+
 test('render with data error', function (t) {
   return plugin.render(path.resolve('test/render/data-error/index.twig')).then(
     function() {
       t.fail();
     },
-    function() {
-      t.pass();
+    function(err) {
+      t.ok(err.error.message);
+      t.equal(err.error.file, path.resolve('test/render/data-error/index.twig.data.js'));
     }
   );
 });
@@ -152,6 +165,25 @@ test('render with data as function', function (t) {
 
       var render = renderResult.binaries[0].data;
       var expected = '<div class="bar">Dummy</div>';
+
+      t.same(render, expected);
+    },
+    function(err) {
+      t.fail(err);
+    }
+  );
+});
+
+test('render with twig extend', function (t) {
+  t.plan(3);
+
+  return plugin.render(path.resolve('test/render/twig-extend/index.twig')).then(
+    function(renderResult) {
+      t.equal(renderResult.dependencies.length, 2);
+      t.equal(renderResult.binaries.length, 1);
+
+      var render = renderResult.binaries[0].data;
+      var expected = '<div class="bar">foo foo-bar</div>';
 
       t.same(render, expected);
     },
