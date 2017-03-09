@@ -60,6 +60,8 @@ test('render with error in partial', function (t) {
       t.fail();
     },
     function(renderResult) {
+      console.log('>>>>>>>>>>>>>', renderResult);
+
       t.equal(renderResult.dependencies.length, 1);
     }
   );
@@ -152,6 +154,25 @@ test('render with data as function', function (t) {
 
       var render = renderResult.binaries[0].data;
       var expected = '<div class="bar">Dummy</div>';
+
+      t.same(render, expected);
+    },
+    function(err) {
+      t.fail(err);
+    }
+  );
+});
+
+test('render with twig extend', function (t) {
+  t.plan(3);
+
+  return plugin.render(path.resolve('test/render/twig-extend/index.twig')).then(
+    function(renderResult) {
+      t.equal(renderResult.dependencies.length, 2);
+      t.equal(renderResult.binaries.length, 1);
+
+      var render = renderResult.binaries[0].data;
+      var expected = '<div class="bar">foo foo-bar</div>';
 
       t.same(render, expected);
     },
