@@ -1,0 +1,1 @@
+throw 'This error should have been catch by then';
