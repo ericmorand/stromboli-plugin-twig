@@ -11,7 +11,6 @@ class Plugin {
    */
   constructor(config) {
     this.config = config;
-    this.twig = require('twig');
 
     /**
      *
@@ -32,6 +31,8 @@ class Plugin {
 
   compile(file) {
     var that = this;
+
+    that.twig = Object.assign({}, require('twig'));
 
     return this.getData(file).then(
       function (data) {
