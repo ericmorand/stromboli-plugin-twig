@@ -169,38 +169,54 @@ class Plugin {
 
           deleteRequireCache(dataFile);
 
-          try {
-            var data = require(dataFile);
-          }
-          catch (err) {
-            reject({
-              file: dataFile,
-              message: err
-            });
-          }
-
-          var mdeps = require('module-deps');
-
-          var md = mdeps();
+          var md = require('module-deps')({
+            ignoreMissing: true
+          });
 
           md.on('data', function (data) {
             result.files.push(data.id);
           });
 
-          md.on('end', function () {
-            result.files.reverse();
+          var error = null;
 
-            if (typeof data === 'function') {
-              data = data(that);
+          md.on('missing', function (id, parent) {
+            if (!error) {
+              error = {
+                file: parent.filename,
+                message: 'Cannot find module \'' + id + '\''
+              };
             }
+          });
 
-            return Promise.resolve(data).then(
-              function (data) {
-                result.data = data;
-
-                fulfill(result);
+          md.on('end', function () {
+            if (error) {
+              reject(error);
+            }
+            else {
+              try {
+                var data = require(dataFile);
               }
-            );
+              catch (err) {
+                reject({
+                  file: dataFile,
+                  message: err
+                });
+              }
+
+              result.files.reverse();
+
+              if (typeof data === 'function') {
+                data = data(that);
+              }
+
+              return Promise.resolve(data).then(
+                function (data) {
+                  result.data = data;
+
+                  fulfill(result);
+                }
+              );
+            }
           });
 
           md.end({
