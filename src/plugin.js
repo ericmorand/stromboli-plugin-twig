@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const requireUncached = require('require-uncached');
 
 const Promise = require('promise');
 const fsStat = Promise.denodeify(fs.stat);
@@ -29,12 +30,18 @@ class Plugin {
     };
   }
 
-  compile(file) {
+  compile(file, fetchData) {
     var that = this;
+    var promise = null;
 
-    that.twig = Object.assign({}, require('twig'));
+    if (fetchData) {
+      promise = this.getData(file);
+    }
+    else {
+      promise = Promise.resolve(true);
+    }
 
-    return this.getData(file).then(
+    return promise.then(
       function (data) {
         return new Promise(function (fulfill, reject) {
           var twig = that.twig;
@@ -75,6 +82,8 @@ class Plugin {
   render(file, output) {
     var that = this;
 
+    that.twig = requireUncached('twig');
+
     if (!output) {
       output = 'index.html';
     }
@@ -86,7 +95,7 @@ class Plugin {
     };
 
     // retrieve dependencies and render the template
-    return that.compile(file).then(
+    return that.compile(file, true).then(
       function (result) {
         let data = result.data;
         let template = result.template;
@@ -169,38 +178,54 @@ class Plugin {
 
           deleteRequireCache(dataFile);
 
-          try {
-            var data = require(dataFile);
-          }
-          catch (err) {
-            reject({
-              file: dataFile,
-              message: err
-            });
-          }
-
-          var mdeps = require('module-deps');
-
-          var md = mdeps();
+          var md = require('module-deps')({
+            ignoreMissing: true
+          });
 
           md.on('data', function (data) {
             result.files.push(data.id);
           });
 
-          md.on('end', function () {
-            result.files.reverse();
+          var error = null;
 
-            if (typeof data === 'function') {
-              data = data(that);
+          md.on('missing', function (id, parent) {
+            if (!error) {
+              error = {
+                file: parent.filename,
+                message: 'Cannot find module \'' + id + '\''
+              };
             }
+          });
 
-            return Promise.resolve(data).then(
-              function (data) {
-                result.data = data;
-
-                fulfill(result);
+          md.on('end', function () {
+            if (error) {
+              reject(error);
+            }
+            else {
+              try {
+                var data = require(dataFile);
               }
-            );
+              catch (err) {
+                reject({
+                  file: dataFile,
+                  message: err
+                });
+              }
+
+              result.files.reverse();
+
+              if (typeof data === 'function') {
+                data = data(that);
+              }
+
+              return Promise.resolve(data).then(
+                function (data) {
+                  result.data = data;
+
+                  fulfill(result);
+                }
+              );
+            }
           });
 
           md.end({

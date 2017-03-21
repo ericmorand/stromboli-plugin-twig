@@ -1,8 +1,11 @@
 const Plugin = require('../src/plugin');
 const test = require('tap').test;
 const path = require('path');
+const Twig = require('twig');
 
-var plugin = new Plugin({}, 'twig', 'index.twig');
+var plugin = new Plugin({});
+
+plugin.twig = Twig;
 
 test('dependencies', function (t) {
   t.plan(1);

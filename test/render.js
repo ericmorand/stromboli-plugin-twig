@@ -100,6 +100,18 @@ test('render with data error', function (t) {
   );
 });
 
+test('render with data with bad require', function (t) {
+  return plugin.render(path.resolve('test/render/data-with-bad-require/index.twig')).then(
+    function() {
+      t.fail();
+    },
+    function(err) {
+      t.ok(err.error.message);
+      t.equal(err.error.file, path.resolve('test/render/data-with-bad-require/dep.data.js'));
+    }
+  );
+});
+
 test('render without output', function (t) {
   t.plan(1);
 
@@ -191,4 +203,40 @@ test('render with twig extend', function (t) {
       t.fail(err);
     }
   );
+});
+
+test('render', function(test) {
+  test.test('should use a fresh twig instance', function(t) {
+    return plugin.render(path.resolve('test/render/twig-fresh/first.twig')).then(
+      function() {
+        plugin.render(path.resolve('test/render/twig-fresh/second.twig')).then(
+          function(result) {
+            let data = result.data;
+            let template = result.template;
+
+            let binary = template.render(data.data);
+
+            t.notOk(binary);
+
+            test.end();
+          }
+        )
+      }
+    )
+  });
+
+  test.test('should not fetch data for dependencies that also have a data file', function(t) {
+    return plugin.render(path.resolve('test/render/data/index.twig')).then(
+      function() {
+        t.notOk(plugin.twig.foo);
+
+        test.end();
+      },
+      function(err) {
+        t.fail(err);
+
+        test.end();
+      }
+    );
+  });
 });
