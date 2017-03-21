@@ -192,3 +192,39 @@ test('render with twig extend', function (t) {
     }
   );
 });
+
+test('render', function(test) {
+  test.test('should use a fresh twig instance', function(t) {
+    return plugin.render(path.resolve('test/render/twig-fresh/first.twig')).then(
+      function() {
+        plugin.render(path.resolve('test/render/twig-fresh/second.twig')).then(
+          function(result) {
+            let data = result.data;
+            let template = result.template;
+
+            let binary = template.render(data.data);
+
+            t.notOk(binary);
+
+            test.end();
+          }
+        )
+      }
+    )
+  });
+
+  test.test('should not fetch data for dependencies that also have a data file', function(t) {
+    return plugin.render(path.resolve('test/render/data/index.twig')).then(
+      function() {
+        t.notOk(plugin.twig.foo);
+
+        test.end();
+      },
+      function(err) {
+        t.fail(err);
+
+        test.end();
+      }
+    );
+  });
+});

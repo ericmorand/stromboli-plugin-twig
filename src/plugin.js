@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const requireUncached = require('require-uncached');
 
 const Promise = require('promise');
 const fsStat = Promise.denodeify(fs.stat);
@@ -29,12 +30,18 @@ class Plugin {
     };
   }
 
-  compile(file) {
+  compile(file, fetchData) {
     var that = this;
+    var promise = null;
 
-    that.twig = Object.assign({}, require('twig'));
+    if (fetchData) {
+      promise = this.getData(file);
+    }
+    else {
+      promise = Promise.resolve(true);
+    }
 
-    return this.getData(file).then(
+    return promise.then(
       function (data) {
         return new Promise(function (fulfill, reject) {
           var twig = that.twig;
@@ -75,6 +82,8 @@ class Plugin {
   render(file, output) {
     var that = this;
 
+    that.twig = requireUncached('twig');
+
     if (!output) {
       output = 'index.html';
     }
@@ -86,7 +95,7 @@ class Plugin {
     };
 
     // retrieve dependencies and render the template
-    return that.compile(file).then(
+    return that.compile(file, true).then(
       function (result) {
         let data = result.data;
         let template = result.template;
