@@ -100,6 +100,18 @@ test('render with data error', function (t) {
   );
 });
 
+test('render with data with bad require', function (t) {
+  return plugin.render(path.resolve('test/render/data-with-bad-require/index.twig')).then(
+    function() {
+      t.fail();
+    },
+    function(err) {
+      t.ok(err.error.message);
+      t.equal(err.error.file, path.resolve('test/render/data-with-bad-require/dep.data.js'));
+    }
+  );
+});
+
 test('render without output', function (t) {
   t.plan(1);
 
