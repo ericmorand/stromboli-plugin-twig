@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 var plugin = new Plugin();
+var plugin = new Plugin;
 
 test('render without data', function (t) {
   t.plan(3);
@@ -60,7 +61,8 @@ test('render with error in partial', function (t) {
       t.fail();
     },
     function(renderResult) {
-      t.equal(renderResult.dependencies.length, 1);
+      t.ok(renderResult.error.message);
+      t.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
     }
   );
 });
@@ -71,7 +73,7 @@ test('render with missing partial', function (t) {
       t.fail();
     },
     function(renderResult) {
-      t.equal(renderResult.dependencies.length, 1);
+      t.equal(renderResult.dependencies.length, 2);
     }
   );
 });

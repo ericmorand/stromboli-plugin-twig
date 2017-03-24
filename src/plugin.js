@@ -11,7 +11,7 @@ class Plugin {
    * @param config {Object}
    */
   constructor(config) {
-    this.config = config;
+    this.config = config || {};
 
     /**
      *
@@ -30,18 +30,11 @@ class Plugin {
     };
   }
 
-  compile(file, fetchData) {
+  compile(file) {
     var that = this;
     var promise = null;
 
-    if (fetchData) {
-      promise = this.getData(file);
-    }
-    else {
-      promise = Promise.resolve(true);
-    }
-
-    return promise.then(
+    return this.getData(file).then(
       function (data) {
         return new Promise(function (fulfill, reject) {
           var twig = that.twig;
@@ -51,7 +44,7 @@ class Plugin {
           try {
             twig.twig({
               path: file,
-              namespaces: that.config ? that.config.namespaces : null,
+              namespaces: that.config.namespaces,
               rethrow: true,
               async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
               load: function (template) {
@@ -95,7 +88,7 @@ class Plugin {
     };
 
     // retrieve dependencies and render the template
-    return that.compile(file, true).then(
+    return that.compile(file).then(
       function (result) {
         let data = result.data;
         let template = result.template;
@@ -108,7 +101,7 @@ class Plugin {
 
         return Promise.all(
           [
-            that.getDependencies(template).then(
+            that.getDependencies(file).then(
               function (dependencies) {
                 updateRenderResult(dependencies);
 
@@ -189,12 +182,10 @@ class Plugin {
           var error = null;
 
           md.on('missing', function (id, parent) {
-            if (!error) {
-              error = {
-                file: parent.filename,
-                message: 'Cannot find module \'' + id + '\''
-              };
-            }
+            error = {
+              file: parent.filename,
+              message: 'Cannot find module \'' + id + '\''
+            };
           });
 
           md.on('end', function () {
@@ -240,69 +231,41 @@ class Plugin {
     );
   }
 
-  getDependencies(template) {
-    var that = this;
-    var dependencies = [];
+  getDependencies(file) {
+    const Depper = require('twig-deps');
 
-    var resolveDependencies = function (_template) {
-      dependencies.push(_template.path);
+    let self = this;
+    let dependencies = [];
 
-      var processToken = function (token) {
-        if (token.type == 'logic') {
-          token = token.token;
+    return new Promise(function (fulfill, reject) {
+      let depper = new Depper();
 
-          switch (token.type) {
-            case 'Twig.logic.type.include':
-            case 'Twig.logic.type.import': {
-              var stack = token.stack;
+      depper.namespaces = self.config.namespaces;
 
-              return Promise.all(stack.map(function (stackEntry) {
-                switch (stackEntry.type) {
-                  case 'Twig.expression.type.string':
-                    var dep = that.twig.path.parsePath(_template, stackEntry.value);
+      depper.on('data', function (dep) {
+        dependencies.push(dep);
+      });
 
-                    try {
-                      fs.statSync(dep);
+      depper.on('missing', function (dep) {
+        dependencies.push(dep);
+      });
 
-                      if (dependencies.indexOf(dep) < 0) {
-                        return that.compile(dep).then(
-                          function (result) {
-                            return resolveDependencies(result.template);
-                          }
-                        )
-                      }
-                    }
-                    catch (err) {
-                      return true;
-                    }
-
-                    break;
-                }
-              }));
-            }
-            case 'Twig.logic.type.for':
-            case 'Twig.logic.type.macro':
-            case 'Twig.logic.type.setcapture': {
-              return Promise.all(token.output.map(processToken));
-            }
-          }
-        }
-      };
-
-      return Promise.all(_template.tokens.map(processToken));
-    };
-
-    return resolveDependencies(template).then(
-      function () {
-        return dependencies;
-      },
-      function (err) {
-        return Promise.reject({
+      depper.on('error', function (err) {
+        reject({
           dependencies: dependencies,
-          error: err
+          error: {
+            file: err.file,
+            message: err.error
+          }
         });
-      }
-    );
+      });
+
+      depper.on('finish', function () {
+        fulfill(dependencies);
+      });
+
+      depper.end(file);
+    });
   }
 }
 
