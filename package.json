@@ -12,14 +12,15 @@
     "fs-extra": "^2.0.0",
     "module-deps": "^4.1.1",
     "promise": "^7.1.1",
-    "require-uncached": "^1.0.3"
+    "require-uncached": "^1.0.3",
+    "twig-deps": "^1.0.2"
   },
   "repository": "ericmorand/stromboli-plugin-twig",
   "license": "Apache-2.0",
   "devDependencies": {
     "stromboli": "^0.10.0",
     "tap": "^7.1.2",
-    "twig": "^0.8.0"
+    "twig": "^1.10.0"
   },
   "peerDependencies": {
     "twig": "^0.8.0"
