@@ -32,7 +32,6 @@ class Plugin {
 
   compile(file) {
     var that = this;
-    var promise = null;
 
     return this.getData(file).then(
       function (data) {
@@ -211,7 +210,9 @@ class Plugin {
 
               return Promise.resolve(data).then(
                 function (data) {
+
                   result.data = data;
+
 
                   fulfill(result);
                 }
