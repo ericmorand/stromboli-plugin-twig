@@ -16,7 +16,7 @@ tap.test('render', function (test) {
         test.end();
       },
       function (renderResult) {
-        test.equal(renderResult.dependencies.length, 0);
+        test.equal(renderResult.dependencies.length, 1);
         test.equal(renderResult.error.file, path.resolve('test/render/error/index.twig'));
         test.ok(renderResult.error.message);
 
@@ -42,6 +42,24 @@ tap.test('render', function (test) {
     );
   });
 
+  test.test('should return file, message and dependencies on missing partial', function (test) {
+    return plugin.render(path.resolve('test/render/missing-partial/index.twig')).then(
+      function () {
+        test.fail();
+
+        test.end();
+      },
+      function (renderResult) {
+        test.equal(renderResult.dependencies.length, 2);
+        // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
+        test.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
+        test.ok(renderResult.error.message);
+
+        test.end();
+      }
+    );
+  });
+
   test.test('should pass twig to data function', function (test) {
     return plugin.render(path.resolve('test/render/twig-to-data/index.twig')).then(
       function (renderResult) {
@@ -57,21 +75,6 @@ tap.test('render', function (test) {
       },
       function (err) {
         test.fail(err);
-
-        test.end();
-      }
-    );
-  });
-
-  test.test('render with missing partial', function (test) {
-    return plugin.render(path.resolve('test/render/missing-partial/index.twig')).then(
-      function () {
-        test.fail();
-
-        test.end();
-      },
-      function (renderResult) {
-        test.equal(renderResult.dependencies.length, 2);
 
         test.end();
       }

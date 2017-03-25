@@ -7,7 +7,7 @@ let plugin = new Plugin({});
 tap.test('getDependencies', function (test) {
   test.plan(2);
 
-  test.test('should return dependencies, file and message on error', function (test) {
+  test.test('should reject with dependencies, file and message on error', function (test) {
     return plugin.getDependencies(path.resolve('test/get-dependencies/error/index.twig')).then(
       function () {
         test.fail();
@@ -27,7 +27,7 @@ tap.test('getDependencies', function (test) {
     )
   });
 
-  test.test('should return dependencies on missing dependency', function (test) {
+  test.test('should resolve with dependencies on missing dependency', function (test) {
     return plugin.getDependencies(path.resolve('test/get-dependencies/missing/index.twig')).then(
       function (results) {
         test.same(results.sort(), [

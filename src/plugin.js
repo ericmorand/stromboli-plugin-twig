@@ -86,17 +86,19 @@ class Plugin {
       error: null
     };
 
+    let updateRenderResult = function (dependencies) {
+      dependencies.forEach(function (dependency) {
+        renderResult.dependencies.push(dependency);
+      });
+    };
+
     // retrieve dependencies and render the template
     return that.compile(file).then(
       function (result) {
         let data = result.data;
         let template = result.template;
 
-        let updateRenderResult = function (dependencies) {
-          dependencies.forEach(function (dependency) {
-            renderResult.dependencies.push(dependency);
-          });
-        };
+        updateRenderResult(data.files);
 
         return Promise.all(
           [
@@ -105,8 +107,6 @@ class Plugin {
                 updateRenderResult(dependencies);
 
                 return new Promise(function (fulfill, reject) {
-                  updateRenderResult(data.files);
-
                   try {
                     var binary = template.render(data.data);
 
@@ -118,6 +118,11 @@ class Plugin {
                     fulfill(renderResult);
                   }
                   catch (err) {
+                    renderResult.error = {
+                      file: err.file,
+                      message: err.message
+                    };
+
                     reject(renderResult);
                   }
                 });
@@ -138,6 +143,8 @@ class Plugin {
         )
       },
       function (err) {
+        updateRenderResult([file]);
+
         renderResult.error = err;
 
         return Promise.reject(renderResult);
