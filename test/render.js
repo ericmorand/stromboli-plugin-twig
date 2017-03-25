@@ -1,244 +1,143 @@
 const Plugin = require('../src/plugin');
-const test = require('tap').test;
+const tap = require('tap');
 const path = require('path');
 const fs = require('fs');
 
-var plugin = new Plugin();
-var plugin = new Plugin;
+let plugin = new Plugin({});
 
-test('render without data', function (t) {
-  t.plan(3);
+tap.test('render', function (test) {
+  test.plan(7);
 
-  return plugin.render(path.resolve('test/render/basic/index.twig')).then(
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 2);
-      t.equal(renderResult.binaries.length, 1);
+  test.test('should return file, message and no dependency on error in entry', function (test) {
+    return plugin.render(path.resolve('test/render/error/index.twig')).then(
+      function () {
+        test.fail();
 
-      var render = renderResult.binaries[0].data;
-      var awaited = fs.readFileSync(path.resolve('test/render/basic/index.html')).toString();
+        test.end();
+      },
+      function (renderResult) {
+        test.equal(renderResult.dependencies.length, 0);
+        test.equal(renderResult.error.file, path.resolve('test/render/error/index.twig'));
+        test.ok(renderResult.error.message);
 
-      t.equal(render, awaited);
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
-
-test('render with data', function (t) {
-  t.plan(3);
-
-  return plugin.render(path.resolve('test/render/data/index.twig')).then(
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 3);
-      t.equal(renderResult.binaries.length, 1);
-
-      var render = renderResult.binaries[0].data;
-      var awaited = '<div class="outer"><div class="inner">Lorem ipsum</div></div>';
-
-      t.same(render, awaited);
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
-
-test('render with error', function (t) {
-  return plugin.render(path.resolve('test/render/error/index.twig')).then(
-    function() {
-      t.fail();
-    },
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 0);
-    }
-  );
-});
-
-test('render with error in partial', function (t) {
-  return plugin.render(path.resolve('test/render/error-in-partial/index.twig')).then(
-    function() {
-      t.fail();
-    },
-    function(renderResult) {
-      t.ok(renderResult.error.message);
-      t.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
-    }
-  );
-});
-
-test('render with missing partial', function (t) {
-  return plugin.render(path.resolve('test/render/missing-partial/index.twig')).then(
-    function() {
-      t.fail();
-    },
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 2);
-    }
-  );
-});
-
-test('render with data exception', function (t) {
-  return plugin.render(path.resolve('test/render/data-exception/index.twig')).then(
-    function() {
-      t.fail();
-    },
-    function(err) {
-      t.ok(err.error.message);
-      t.equal(err.error.file, path.resolve('test/render/data-exception/index.twig.data.js'));
-    }
-  );
-});
-
-test('render with data error', function (t) {
-  return plugin.render(path.resolve('test/render/data-error/index.twig')).then(
-    function() {
-      t.fail();
-    },
-    function(err) {
-      t.ok(err.error.message);
-      t.equal(err.error.file, path.resolve('test/render/data-error/index.twig.data.js'));
-    }
-  );
-});
-
-test('render with data with bad require', function (t) {
-  return plugin.render(path.resolve('test/render/data-with-bad-require/index.twig')).then(
-    function() {
-      t.fail();
-    },
-    function(err) {
-      t.ok(err.error.message);
-      t.equal(err.error.file, path.resolve('test/render/data-with-bad-require/dep.data.js'));
-    }
-  );
-});
-
-test('render without output', function (t) {
-  t.plan(1);
-
-  return plugin.render(path.resolve('test/render/basic/index.twig')).then(
-    function(renderResult) {
-      var binaries = renderResult.binaries;
-
-      t.equal(binaries[0].name, 'index.html');
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
-
-test('render with output', function (t) {
-  t.plan(1);
-
-  return plugin.render(path.resolve('test/render/basic/index.twig'), 'custom.html').then(
-    function(renderResult) {
-      var binaries = renderResult.binaries;
-
-      t.equal(binaries[0].name, 'custom.html');
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
-
-test('render with namespaces', function (t) {
-  t.plan(3);
-
-  var plugin = new Plugin({
-    namespaces: {
-      dummy: path.resolve('test/render/namespace/dummy')
-    }
+        test.end();
+      }
+    );
   });
 
-  return plugin.render(path.resolve('test/render/namespace/index.twig')).then(
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 3);
-      t.equal(renderResult.binaries.length, 1);
+  test.test('should return file, message and dependencies on error in partial', function (test) {
+    return plugin.render(path.resolve('test/render/error-in-partial/index.twig')).then(
+      function () {
+        test.fail();
 
-      var render = renderResult.binaries[0].data;
-      var expected = '<div>partial-1</div><div>partial-2</div>';
+        test.end()
+      },
+      function (renderResult) {
+        test.equal(renderResult.dependencies.length, 2);
+        test.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
+        test.ok(renderResult.error.message);
 
-      t.same(render, expected);
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
+        test.end();
+      }
+    );
+  });
 
-test('render with data as function', function (t) {
-  t.plan(3);
+  test.test('should pass twig to data function', function (test) {
+    return plugin.render(path.resolve('test/render/twig-to-data/index.twig')).then(
+      function (renderResult) {
+        test.equal(renderResult.dependencies.length, 2);
+        test.equal(renderResult.binaries.length, 1);
 
-  return plugin.render(path.resolve('test/render/data-as-function/index.twig')).then(
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 2);
-      t.equal(renderResult.binaries.length, 1);
+        let render = renderResult.binaries[0].data;
+        let expected = '<div class="bar">Dummy</div>';
 
-      var render = renderResult.binaries[0].data;
-      var expected = '<div class="bar">Dummy</div>';
+        test.same(render, expected);
 
-      t.same(render, expected);
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
+        test.end();
+      },
+      function (err) {
+        test.fail(err);
 
-test('render with twig extend', function (t) {
-  t.plan(3);
+        test.end();
+      }
+    );
+  });
 
-  return plugin.render(path.resolve('test/render/twig-extend/index.twig')).then(
-    function(renderResult) {
-      t.equal(renderResult.dependencies.length, 2);
-      t.equal(renderResult.binaries.length, 1);
+  test.test('render with missing partial', function (test) {
+    return plugin.render(path.resolve('test/render/missing-partial/index.twig')).then(
+      function () {
+        test.fail();
 
-      var render = renderResult.binaries[0].data;
-      var expected = '<div class="bar">foo foo-bar</div>';
+        test.end();
+      },
+      function (renderResult) {
+        test.equal(renderResult.dependencies.length, 2);
 
-      t.same(render, expected);
-    },
-    function(err) {
-      t.fail(err);
-    }
-  );
-});
+        test.end();
+      }
+    );
+  });
 
-test('render', function(test) {
-  test.test('should use a fresh twig instance', function(t) {
+  test.test('should support output config', function (test) {
+    return plugin.render(path.resolve('test/render/basic/index.twig'), 'custom.html').then(
+      function (renderResult) {
+        let binaries = renderResult.binaries;
+
+        test.equal(binaries[0].name, 'custom.html');
+
+        test.end();
+      },
+      function (err) {
+        test.fail(err);
+
+        test.end();
+      }
+    );
+  });
+
+  test.test('should support namespaces config', function (test) {
+    let plugin = new Plugin({
+      namespaces: {
+        dummy: path.resolve('test/render/namespace/dummy')
+      }
+    });
+
+    return plugin.render(path.resolve('test/render/namespace/index.twig')).then(
+      function (renderResult) {
+        test.equal(renderResult.dependencies.length, 3);
+        test.equal(renderResult.binaries.length, 1);
+
+        let render = renderResult.binaries[0].data;
+        let wanted = '<div>partial-1</div><div>partial-2</div>';
+
+        test.same(render, wanted);
+
+        test.end();
+      },
+      function (err) {
+        test.fail(err);
+
+        test.end();
+      }
+    );
+  });
+
+  test.test('should use a fresh twig instance', function (test) {
     return plugin.render(path.resolve('test/render/twig-fresh/first.twig')).then(
-      function() {
+      function () {
         plugin.render(path.resolve('test/render/twig-fresh/second.twig')).then(
-          function(result) {
+          function (result) {
             let data = result.data;
             let template = result.template;
 
             let binary = template.render(data.data);
 
-            t.notOk(binary);
+            test.notOk(binary);
 
             test.end();
           }
         )
       }
     )
-  });
-
-  test.test('should not fetch data for dependencies that also have a data file', function(t) {
-    return plugin.render(path.resolve('test/render/data/index.twig')).then(
-      function() {
-        t.notOk(plugin.twig.foo);
-
-        test.end();
-      },
-      function(err) {
-        t.fail(err);
-
-        test.end();
-      }
-    );
   });
 });

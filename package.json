@@ -5,7 +5,7 @@
   "main": "src/plugin.js",
   "scripts": {
     "pretest": "npm prune && npm update",
-    "test": "tap test/*.js --cov"
+    "test": "tap test/*.js --cov --reporter=spec --100"
   },
   "author": "Eric MORAND",
   "dependencies": {
