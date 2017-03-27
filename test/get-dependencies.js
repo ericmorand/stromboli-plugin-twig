@@ -45,13 +45,14 @@ tap.test('getDependencies', function (test) {
     )
   });
 
-  test.test('should resolve with data dependencies', function (test) {
-    return plugin.getDependencies(path.resolve('test/get-dependencies/data/index.twig')).then(
+  test.test('should resolve with dependencies when data requires a twig template', function (test) {
+    return plugin.getDependencies(path.resolve('test/get-dependencies/data-with-twig-template/index.twig')).then(
       function (results) {
         test.same(results.sort(), [
-          path.resolve('test/get-dependencies/data/index.twig'),
-          path.resolve('test/get-dependencies/data/index.twig.data.js'),
-          path.resolve('test/get-dependencies/data/foo.js')
+          path.resolve('test/get-dependencies/data-with-twig-template/index.twig'),
+          path.resolve('test/get-dependencies/data-with-twig-template/index.twig.data.js'),
+          path.resolve('test/get-dependencies/data-with-twig-template/foo.twig'),
+          path.resolve('test/get-dependencies/data-with-twig-template/bar.twig')
         ].sort());
 
         test.end();

@@ -5,7 +5,7 @@ const path = require('path');
 let plugin = new Plugin({});
 
 tap.test('getData', function (test) {
-  test.plan(7);
+  test.plan(8);
 
   test.test('should support sync data', function (test) {
     return plugin.getData(path.resolve('test/get-data/sync/index.twig')).then(
@@ -114,6 +114,25 @@ tap.test('getData', function (test) {
       function (err) {
         test.equal(err.file, path.resolve('test/get-data/missing-dependency/index.twig.data.js'));
         test.ok(err.message);
+
+        test.end();
+      }
+    );
+  });
+
+  test.test('should support data with twig template', function (test) {
+    return plugin.getData(path.resolve('test/get-data/with-twig-template/index.twig')).then(
+      function (data) {
+        let wanted = {
+          content: "foo-bar"
+        };
+
+        test.same(data, wanted);
+
+        test.end();
+      },
+      function (err) {
+        test.fail(err);
 
         test.end();
       }
