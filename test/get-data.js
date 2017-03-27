@@ -108,6 +108,21 @@ tap.test('getData', function (test) {
     );
   });
 
+  test.test('should handle data with error in function', function (test) {
+    return plugin.getData(path.resolve('test/get-data/error-in-function/index.twig')).then(
+      function () {
+        test.fail();
+
+        test.end();
+      },
+      function (err) {
+        test.pass(err.message);
+
+        test.end();
+      }
+    );
+  });
+
   test.test('should handle data with missing dependency', function (test) {
     return plugin.getData(path.resolve('test/get-data/missing-dependency/index.twig')).then(
       function () {

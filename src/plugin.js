@@ -212,14 +212,20 @@ class Plugin {
               result.files.reverse();
 
               if (typeof data === 'function') {
-                data = data(that);
+                try {
+                  data = data(that);
+                }
+                catch (err) {
+                  reject({
+                    file: dataFile,
+                    message: err
+                  });
+                }
               }
 
               return Promise.resolve(data).then(
                 function (data) {
-
                   result.data = data;
-
 
                   fulfill(result);
                 }
