@@ -98,8 +98,6 @@ class Plugin {
         let data = result.data;
         let template = result.template;
 
-        updateRenderResult(data.files);
-
         return Promise.all(
           [
             that.getDependencies(file).then(
@@ -108,7 +106,7 @@ class Plugin {
 
                 return new Promise(function (fulfill, reject) {
                   try {
-                    var binary = template.render(data.data);
+                    var binary = template.render(data);
 
                     renderResult.binaries.push({
                       name: output,
@@ -126,13 +124,6 @@ class Plugin {
                     reject(renderResult);
                   }
                 });
-              },
-              function (result) {
-                updateRenderResult(result.dependencies);
-
-                renderResult.error = result.error;
-
-                return Promise.reject(renderResult);
               }
             )
           ]
@@ -152,14 +143,13 @@ class Plugin {
     )
   }
 
+  getDataPath(file) {
+    return path.join(path.dirname(file), path.basename(file) + '.data.js');
+  }
+
   getData(file) {
     var that = this;
-    var dataFile = path.join(path.dirname(file), path.basename(file) + '.data.js');
-
-    var result = {
-      files: [],
-      data: null
-    };
+    var dataFile = that.getDataPath(file);
 
     return that.exists(dataFile).then(
       function () {
@@ -177,76 +167,44 @@ class Plugin {
 
           deleteRequireCache(dataFile);
 
-          var md = require('module-deps')({
-            ignoreMissing: true
-          });
+          try {
+            var data = require(dataFile);
+          }
+          catch (err) {
+            reject({
+              file: dataFile,
+              message: err
+            });
+          }
 
-          md.on('data', function (data) {
-            result.files.push(data.id);
-          });
+          if (typeof data === 'function') {
+            data = data(that);
+          }
 
-          var error = null;
-
-          md.on('missing', function (id, parent) {
-            error = {
-              file: parent.filename,
-              message: 'Cannot find module \'' + id + '\''
-            };
-          });
-
-          md.on('end', function () {
-            if (error) {
-              reject(error);
+          return Promise.resolve(data).then(
+            function (data) {
+              fulfill(data);
             }
-            else {
-              try {
-                var data = require(dataFile);
-              }
-              catch (err) {
-                reject({
-                  file: dataFile,
-                  message: err
-                });
-              }
-
-              result.files.reverse();
-
-              if (typeof data === 'function') {
-                data = data(that);
-              }
-
-              return Promise.resolve(data).then(
-                function (data) {
-
-                  result.data = data;
-
-
-                  fulfill(result);
-                }
-              );
-            }
-          });
-
-          md.end({
-            file: dataFile,
-            entry: true
-          });
+          );
         });
       },
       function () {
-        return result;
+        return null;
       }
     );
   }
 
   getDependencies(file) {
-    const Depper = require('twig-deps');
-
     let self = this;
+
+    let promises = [];
     let dependencies = [];
 
-    return new Promise(function (fulfill, reject) {
-      let depper = new Depper();
+    // fetch twig template dependencies via twig-deps
+    promises.push(new Promise(function (fulfill, reject) {
+      const TwigDeps = require('twig-deps');
+
+      let depper = new TwigDeps();
 
       depper.namespaces = self.config.namespaces;
 
@@ -258,14 +216,8 @@ class Plugin {
         dependencies.push(dep);
       });
 
-      depper.on('error', function (err) {
-        reject({
-          dependencies: dependencies,
-          error: {
-            file: err.file,
-            message: err.error
-          }
-        });
+      depper.on('error', function () {
+        // noop, we don't care but we have to catch this
       });
 
       depper.on('finish', function () {
@@ -273,7 +225,38 @@ class Plugin {
       });
 
       depper.end(file);
-    });
+    }));
+
+    // fetch twig template data dependencies via module-deps
+    promises.push(new Promise(function (fulfill, reject) {
+      const ModuleDeps = require('module-deps');
+
+      let dataFile = self.getDataPath(file);
+      let depper = ModuleDeps({ignoreMissing: true});
+
+      depper.on('data', function (data) {
+        dependencies.push(data.id);
+      });
+
+      depper.on('missing', function (id, parent) {
+        dependencies.push(id);
+      });
+
+      depper.on('end', function () {
+        fulfill(dependencies);
+      });
+
+      depper.end({
+        file: dataFile,
+        entry: true
+      });
+    }));
+
+    return Promise.all(promises).then(
+      function () {
+        return dependencies;
+      }
+    )
   }
 }
 

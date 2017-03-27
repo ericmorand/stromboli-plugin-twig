@@ -9,17 +9,12 @@ tap.test('getData', function (test) {
 
   test.test('should support sync data', function (test) {
     return plugin.getData(path.resolve('test/get-data/sync/index.twig')).then(
-      function (results) {
+      function (data) {
         let wanted = {
-          files: [
-            path.resolve('test/get-data/sync/index.twig.data.js')
-          ],
-          data: {
-            content: "Lorem ipsum"
-          }
+          content: "Lorem ipsum"
         };
 
-        test.same(results, wanted);
+        test.same(data, wanted);
 
         test.end();
       },
@@ -33,21 +28,12 @@ tap.test('getData', function (test) {
 
   test.test('should support async data', function (test) {
     return plugin.getData(path.resolve('test/get-data/async/index.twig')).then(
-      function (results) {
+      function (data) {
         let wanted = {
-          files: [
-            path.resolve('test/get-data/async/index.twig.data.js')
-          ],
-          data: {
-            content: "Lorem ipsum"
-          }
+          content: "Lorem ipsum"
         };
 
-        wanted.files.forEach(function (wantedFile) {
-          test.true(results.files.indexOf(wantedFile) > -1);
-        });
-
-        test.same(results.data, wanted.data);
+        test.same(data, wanted);
 
         test.end();
       },
@@ -61,13 +47,8 @@ tap.test('getData', function (test) {
 
   test.test('should support missing data', function (test) {
     return plugin.getData(path.resolve('test/get-data/missing/index.twig')).then(
-      function (results) {
-        let wanted = {
-          files: [],
-          data: null
-        };
-
-        test.same(results, wanted);
+      function (data) {
+        test.notOk(data);
 
         test.end();
       },
@@ -81,10 +62,10 @@ tap.test('getData', function (test) {
 
   test.test('should not cache data', function (test) {
     return plugin.getData(path.resolve('test/get-data/cache/index.twig')).then(
-      function (results) {
+      function (data) {
         return plugin.getData(path.resolve('test/get-data/cache/index.twig')).then(
-          function (results) {
-            test.equal(results.data, 1);
+          function (data) {
+            test.equal(data, 1);
 
             test.end();
           }
