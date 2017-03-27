@@ -5,7 +5,7 @@ const path = require('path');
 let plugin = new Plugin({});
 
 tap.test('getData', function (test) {
-  test.plan(6);
+  test.plan(7);
 
   test.test('should support sync data', function (test) {
     return plugin.getData(path.resolve('test/get-data/sync/index.twig')).then(
@@ -76,6 +76,21 @@ tap.test('getData', function (test) {
 
   test.test('should handle data with error', function (test) {
     return plugin.getData(path.resolve('test/get-data/error/index.twig')).then(
+      function () {
+        test.fail();
+
+        test.end();
+      },
+      function (err) {
+        test.pass(err.message);
+
+        test.end();
+      }
+    );
+  });
+
+  test.test('should handle data with error in function', function (test) {
+    return plugin.getData(path.resolve('test/get-data/error-in-function/index.twig')).then(
       function () {
         test.fail();
 
