@@ -167,6 +167,18 @@ class Plugin {
 
           deleteRequireCache(dataFile);
 
+          let nh = require('node-hook');
+
+          nh.hook('.twig', function (source, filename) {
+            source = 'let twig = require(\'twig\'); module.exports = twig.twig(' + JSON.stringify({
+                path: filename,
+                namespaces: that.config.namespaces,
+                async: false
+              }) + ');';
+
+            return source;
+          });
+
           try {
             var data = require(dataFile);
           }
@@ -209,56 +221,88 @@ class Plugin {
     let dependencies = [];
 
     // fetch twig template dependencies via twig-deps
-    promises.push(new Promise(function (fulfill, reject) {
-      const TwigDeps = require('twig-deps');
+    let getTwigDependencies = function (file) {
+      return new Promise(function (fulfill, reject) {
+        const TwigDeps = require('twig-deps');
 
-      let depper = new TwigDeps();
+        let depper = new TwigDeps();
 
-      depper.namespaces = self.config.namespaces;
+        depper.namespaces = self.config.namespaces;
 
-      depper.on('data', function (dep) {
-        dependencies.push(dep);
-      });
+        depper.on('data', function (dep) {
+          dependencies.push(dep);
+        });
 
-      depper.on('missing', function (dep) {
-        dependencies.push(dep);
-      });
+        depper.on('missing', function (dep) {
+          dependencies.push(dep);
+        });
 
-      depper.on('error', function () {
-        // noop, we don't care but we have to catch this
-      });
+        depper.on('error', function () {
+          // noop, we don't care but we have to catch this
+        });
 
-      depper.on('finish', function () {
-        fulfill(dependencies);
-      });
+        depper.on('finish', function () {
+          fulfill(dependencies);
+        });
 
-      depper.end(file);
-    }));
+        depper.end(file);
+      })
+    };
 
     // fetch twig template data dependencies via module-deps
-    promises.push(new Promise(function (fulfill, reject) {
-      const ModuleDeps = require('module-deps');
+    let getDataDependencies = function (file) {
+      return new Promise(function (fulfill, reject) {
+        const ModuleDeps = require('module-deps');
 
-      let dataFile = self.getDataPath(file);
-      let depper = ModuleDeps({ignoreMissing: true});
+        let depper = ModuleDeps({ignoreMissing: true});
 
-      depper.on('data', function (data) {
-        dependencies.push(data.id);
-      });
+        let twigPromises = [];
+        let twigDependencies = [];
 
-      depper.on('missing', function (id, parent) {
-        dependencies.push(id);
-      });
+        depper.on('data', function (data) {
+          if (path.extname(data.id) === '.twig') {
+            twigPromises.push(getTwigDependencies(data.id).then(
+              function (results) {
+                results.forEach(function (result) {
+                  twigDependencies.push(result);
 
-      depper.on('end', function () {
-        fulfill(dependencies);
-      });
+                  return result;
+                });
+              }
+            ));
+          }
+          else {
+            dependencies.push(data.id);
+          }
+        });
 
-      depper.end({
-        file: dataFile,
-        entry: true
-      });
-    }));
+        depper.on('missing', function (id, parent) {
+          dependencies.push(id);
+        });
+
+        depper.on('end', function () {
+          Promise.all(twigPromises).then(
+            function () {
+              twigDependencies.forEach(function (twigDependency) {
+                if (dependencies.indexOf(twigDependency) < 0) {
+                  dependencies.push(twigDependency);
+                }
+              });
+
+              fulfill(dependencies);
+            }
+          );
+        });
+
+        depper.end({
+          file: file,
+          entry: true
+        });
+      })
+    };
+
+    promises.push(getTwigDependencies(file));
+    promises.push(getDataDependencies(self.getDataPath(file)));
 
     return Promise.all(promises).then(
       function () {
