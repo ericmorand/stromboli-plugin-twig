@@ -82,13 +82,14 @@ class Plugin {
 
     let renderResult = {
       binaries: [],
-      dependencies: [],
+      binaryDependencies: [],
+      sourceDependencies: [],
       error: null
     };
 
     let updateRenderResult = function (dependencies) {
       dependencies.forEach(function (dependency) {
-        renderResult.dependencies.push(dependency);
+        renderResult.sourceDependencies.push(dependency);
       });
     };
 
@@ -272,12 +273,12 @@ class Plugin {
             ));
           }
           else {
-            dependencies.push(data.id);
+            twigDependencies.push(data.id);
           }
         });
 
         depper.on('missing', function (id, parent) {
-          dependencies.push(id);
+          twigDependencies.push(id);
         });
 
         depper.on('end', function () {
