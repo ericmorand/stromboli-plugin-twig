@@ -16,7 +16,7 @@ tap.test('render', function (test) {
         test.end();
       },
       function (renderResult) {
-        test.ok(renderResult.dependencies);
+        test.ok(renderResult.sourceDependencies);
         test.equal(renderResult.error.file, path.resolve('test/render/error/index.twig'));
         test.ok(renderResult.error.message);
 
@@ -33,7 +33,7 @@ tap.test('render', function (test) {
         test.end()
       },
       function (renderResult) {
-        test.ok(renderResult.dependencies);
+        test.ok(renderResult.sourceDependencies);
         // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
         test.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
         test.ok(renderResult.error.message);
@@ -51,7 +51,7 @@ tap.test('render', function (test) {
         test.end();
       },
       function (renderResult) {
-        test.ok(renderResult.dependencies);
+        test.ok(renderResult.sourceDependencies);
         // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
         test.equal(renderResult.error.file, path.resolve('test/render/missing-partial/partial.twig'));
         test.ok(renderResult.error.message);
