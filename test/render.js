@@ -6,7 +6,7 @@ const fs = require('fs');
 let plugin = new Plugin({});
 
 tap.test('render', function (test) {
-  test.plan(7);
+  test.plan(8);
 
   test.test('should reject with file, message and no dependency on error in entry', function (test) {
     return plugin.render(path.resolve('test/render/error/index.twig')).then(
@@ -16,7 +16,9 @@ tap.test('render', function (test) {
         test.end();
       },
       function (renderResult) {
-        test.ok(renderResult.sourceDependencies);
+        test.same(renderResult.sourceDependencies.sort(), [
+          path.resolve('test/render/error/index.twig')
+        ]);
         test.equal(renderResult.error.file, path.resolve('test/render/error/index.twig'));
         test.ok(renderResult.error.message);
 
@@ -33,7 +35,11 @@ tap.test('render', function (test) {
         test.end()
       },
       function (renderResult) {
-        test.ok(renderResult.sourceDependencies);
+        test.same(renderResult.sourceDependencies.sort(), [
+          path.resolve('test/render/error-in-partial/index.twig'),
+          path.resolve('test/render/error-in-partial/index.twig.data.js'),
+          path.resolve('test/render/error-in-partial/partial.twig')
+        ]);
         // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
         test.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
         test.ok(renderResult.error.message);
@@ -51,9 +57,33 @@ tap.test('render', function (test) {
         test.end();
       },
       function (renderResult) {
-        test.ok(renderResult.sourceDependencies);
+        test.same(renderResult.sourceDependencies.sort(), [
+          path.resolve('test/render/missing-partial/index.twig'),
+          path.resolve('test/render/missing-partial/index.twig.data.js'),
+          path.resolve('test/render/missing-partial/missing.twig')
+        ]);
         // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
-        test.equal(renderResult.error.file, path.resolve('test/render/missing-partial/partial.twig'));
+        test.equal(renderResult.error.file, path.resolve('test/render/missing-partial/missing.twig'));
+        test.ok(renderResult.error.message);
+
+        test.end();
+      }
+    );
+  });
+
+  test.test('should reject with file, message and dependencies on error in data', function (test) {
+    return plugin.render(path.resolve('test/render/error-in-data/index.twig')).then(
+      function () {
+        test.fail();
+
+        test.end()
+      },
+      function (renderResult) {
+        test.same(renderResult.sourceDependencies.sort(), [
+          path.resolve('test/render/error-in-data/index.twig'),
+          path.resolve('test/render/error-in-data/index.twig.data.js')
+        ]);
+        test.equal(renderResult.error.file, path.resolve('test/render/error-in-data/index.twig.data.js'));
         test.ok(renderResult.error.message);
 
         test.end();

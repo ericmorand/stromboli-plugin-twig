@@ -137,6 +137,10 @@ class Plugin {
       function (err) {
         updateRenderResult([file]);
 
+        if (err.file && (err.file !== file)) {
+          updateRenderResult([err.file]);
+        }
+
         renderResult.error = err;
 
         return Promise.reject(renderResult);
