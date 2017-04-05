@@ -1,5 +1,7 @@
-module.exports = {
-  content: require('./foo.twig').render({
-    foo: 'foo'
-  })
+module.exports = function(renderer) {
+  return {
+    content: renderer.render(require('./foo.twig'), {
+      foo: 'foo'
+    })
+  }
 };

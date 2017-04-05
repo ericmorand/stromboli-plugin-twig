@@ -1,6 +1,7 @@
 const Plugin = require('../src/plugin');
 const tap = require('tap');
 const path = require('path');
+const Twig = require('twig');
 
 let plugin = new Plugin({});
 
@@ -121,7 +122,7 @@ tap.test('getData', function (test) {
   });
 
   test.test('should support data with twig template', function (test) {
-    return plugin.getData(path.resolve('test/get-data/with-twig-template/index.twig')).then(
+    return plugin.getData(path.resolve('test/get-data/with-twig-template/index.twig'), Twig).then(
       function (data) {
         let wanted = {
           content: "foo-bar"
