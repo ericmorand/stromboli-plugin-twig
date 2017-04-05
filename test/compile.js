@@ -5,13 +5,11 @@ const Twig = require('twig');
 
 let plugin = new Plugin({});
 
-plugin.twig = Twig;
-
 tap.test('compile', function (test) {
   test.plan(2);
 
   test.test('should return template and data on success', function(test) {
-    return plugin.compile(path.resolve('test/compile/valid/index.twig')).then(
+    return plugin.compile(path.resolve('test/compile/valid/index.twig'), Twig).then(
       function (result) {
         test.ok(result.template);
         test.ok(result.data);
@@ -27,7 +25,7 @@ tap.test('compile', function (test) {
   });
 
   test.test('should return file and message on error', function(test) {
-    return plugin.compile(path.resolve('test/compile/error/index.twig')).then(
+    return plugin.compile(path.resolve('test/compile/error/index.twig'), Twig).then(
       function (result) {
         test.fail();
 

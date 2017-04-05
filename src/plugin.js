@@ -28,30 +28,36 @@ class Plugin {
         }
       )
     };
+
+    /**
+     *
+     * @param file
+     * @param twig
+     * @returns {Twig.Template|*}
+     * @private
+     */
+    this._compile = function(file, twig) {
+      twig.cache(false);
+
+      return twig.twig({
+        path: file,
+        namespaces: this.config.namespaces,
+        rethrow: true,
+        async: false
+      });
+    };
   }
 
-  compile(file) {
+  compile(file, twig) {
     var that = this;
 
-    return this.getData(file).then(
+    return this.getData(file, twig).then(
       function (data) {
         return new Promise(function (fulfill, reject) {
-          var twig = that.twig;
-
-          twig.cache(false);
-
           try {
-            twig.twig({
-              path: file,
-              namespaces: that.config.namespaces,
-              rethrow: true,
-              async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
-              load: function (template) {
-                fulfill({
-                  data: data,
-                  template: template
-                })
-              }
+            fulfill({
+              data: data,
+              template: that._compile(file, twig)
             });
           }
           catch (err) {
@@ -74,7 +80,7 @@ class Plugin {
   render(file, output) {
     var that = this;
 
-    that.twig = requireUncached('twig');
+    let twig = requireUncached('twig');
 
     if (!output) {
       output = 'index.html';
@@ -94,7 +100,7 @@ class Plugin {
     };
 
     // retrieve dependencies and render the template
-    return that.compile(file).then(
+    return that.compile(file, twig).then(
       function (result) {
         let data = result.data;
         let template = result.template;
@@ -152,7 +158,13 @@ class Plugin {
     return path.join(path.dirname(file), path.basename(file) + '.data.js');
   }
 
-  getData(file) {
+  /**
+   *
+   * @param file
+   * @param twig
+   * @returns {Promise.<{}>}
+   */
+  getData(file, twig) {
     var that = this;
     var dataFile = that.getDataPath(file);
 
@@ -175,13 +187,7 @@ class Plugin {
           let nh = require('node-hook');
 
           nh.hook('.twig', function (source, filename) {
-            source = 'let twig = require(\'twig\'); module.exports = twig.twig(' + JSON.stringify({
-                path: filename,
-                namespaces: that.config.namespaces,
-                async: false
-              }) + ');';
-
-            return source;
+            return `module.exports = '${filename}';`;
           });
 
           try {
@@ -196,7 +202,14 @@ class Plugin {
 
           if (typeof data === 'function') {
             try {
-              data = data(that);
+              data = data({
+                twig: twig,
+                render: function(file, data) {
+                  let template = that._compile(file, twig);
+
+                  return template.render(data);
+                }
+              });
             }
             catch (err) {
               reject({
@@ -219,99 +232,99 @@ class Plugin {
     );
   }
 
+  getDataDependencies(file) {
+    let self = this;
+
+    return new Promise(function (fulfill, reject) {
+      const ModuleDeps = require('module-deps');
+
+      let depper = ModuleDeps({ignoreMissing: true});
+
+      let dependencies = [];
+      let twigPromises = [];
+
+      depper.on('data', function (data) {
+        if (path.extname(data.id) === '.twig') {
+          twigPromises.push(self.getTwigDependencies(data.id).then(
+            function (results) {
+              results.forEach(function (result) {
+                dependencies.push(result);
+
+                return result;
+              });
+            }
+          ));
+        }
+        else {
+          dependencies.push(data.id);
+        }
+      });
+
+      depper.on('missing', function (id, parent) {
+        if (path.extname(id).length === 0) {
+          id = `${id}.js`;
+        }
+
+        dependencies.push(path.resolve(parent.basedir, id));
+      });
+
+      depper.on('end', function () {
+        Promise.all(twigPromises).then(
+          function () {
+            fulfill(dependencies);
+          }
+        );
+      });
+
+      depper.end({
+        file: file,
+        entry: true
+      });
+    })
+  };
+
+  getTwigDependencies(file) {
+    let self = this;
+    let dependencies = [];
+
+    return new Promise(function (fulfill, reject) {
+      const TwigDeps = require('twig-deps');
+
+      let depper = new TwigDeps();
+
+      depper.namespaces = self.config.namespaces;
+
+      depper.on('data', function (dep) {
+        dependencies.push(dep);
+      });
+
+      depper.on('missing', function (dep) {
+        dependencies.push(dep);
+      });
+
+      depper.on('error', function () {
+        // noop, we don't care but we have to catch this
+      });
+
+      depper.on('finish', function () {
+        fulfill(dependencies);
+      });
+
+      depper.end(file);
+    })
+  };
+
   getDependencies(file) {
     let self = this;
 
     let promises = [];
-    let dependencies = [];
 
-    // fetch twig template dependencies via twig-deps
-    let getTwigDependencies = function (file) {
-      return new Promise(function (fulfill, reject) {
-        const TwigDeps = require('twig-deps');
-
-        let depper = new TwigDeps();
-
-        depper.namespaces = self.config.namespaces;
-
-        depper.on('data', function (dep) {
-          dependencies.push(dep);
-        });
-
-        depper.on('missing', function (dep) {
-          dependencies.push(dep);
-        });
-
-        depper.on('error', function () {
-          // noop, we don't care but we have to catch this
-        });
-
-        depper.on('finish', function () {
-          fulfill(dependencies);
-        });
-
-        depper.end(file);
-      })
-    };
-
-    // fetch twig template data dependencies via module-deps
-    let getDataDependencies = function (file) {
-      return new Promise(function (fulfill, reject) {
-        const ModuleDeps = require('module-deps');
-
-        let depper = ModuleDeps({ignoreMissing: true});
-
-        let twigPromises = [];
-        let twigDependencies = [];
-
-        depper.on('data', function (data) {
-          if (path.extname(data.id) === '.twig') {
-            twigPromises.push(getTwigDependencies(data.id).then(
-              function (results) {
-                results.forEach(function (result) {
-                  twigDependencies.push(result);
-
-                  return result;
-                });
-              }
-            ));
-          }
-          else {
-            twigDependencies.push(data.id);
-          }
-        });
-
-        depper.on('missing', function (id, parent) {
-          twigDependencies.push(id);
-        });
-
-        depper.on('end', function () {
-          Promise.all(twigPromises).then(
-            function () {
-              twigDependencies.forEach(function (twigDependency) {
-                if (dependencies.indexOf(twigDependency) < 0) {
-                  dependencies.push(twigDependency);
-                }
-              });
-
-              fulfill(dependencies);
-            }
-          );
-        });
-
-        depper.end({
-          file: file,
-          entry: true
-        });
-      })
-    };
-
-    promises.push(getTwigDependencies(file));
-    promises.push(getDataDependencies(self.getDataPath(file)));
+    promises.push(self.getTwigDependencies(file));
+    promises.push(self.getDataDependencies(self.getDataPath(file)));
 
     return Promise.all(promises).then(
-      function () {
-        return dependencies;
+      function (results) {
+        return [].concat.apply([], results);
       }
     )
   }

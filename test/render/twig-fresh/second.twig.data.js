@@ -1,5 +1,5 @@
-module.exports = function(plugin) {
+module.exports = function(renderer) {
   return {
-    foo: plugin.twig.foo
+    foo: renderer.twig.foo
   }
 };

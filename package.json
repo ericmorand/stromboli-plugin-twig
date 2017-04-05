@@ -19,6 +19,7 @@
   "repository": "ericmorand/stromboli-plugin-twig",
   "license": "Apache-2.0",
   "devDependencies": {
+    "promise": "^7.1.1",
     "tap": "^7.1.2",
     "twig": "^1.10.0"
   },
