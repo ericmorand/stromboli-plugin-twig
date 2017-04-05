@@ -262,10 +262,18 @@ class Plugin {
 
       depper.on('missing', function (id, parent) {
         if (path.extname(id).length === 0) {
-          id = `${id}.js`;
-        }
+          let candidates = [
+            `${id}.js`,
+            `${id}/index.js`
+          ];
 
-        dependencies.push(path.resolve(parent.basedir, id));
+          candidates.forEach(function(candidate) {
+            dependencies.push(path.resolve(parent.basedir, candidate));
+          });
+        }
+        else {
+          dependencies.push(path.resolve(parent.basedir, id));
+        }
       });
 
       depper.on('end', function () {

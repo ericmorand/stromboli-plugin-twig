@@ -48,6 +48,7 @@ tap.test('getDataDependencies', function (test) {
         test.same(results.sort(), [
           path.resolve('test/get-data-dependencies/missing/index.js'),
           path.resolve('test/get-data-dependencies/missing/foo.js'),
+          path.resolve('test/get-data-dependencies/missing/foo/index.js'),
           path.resolve('test/get-data-dependencies/missing/bar.js'),
           path.resolve('test/get-data-dependencies/missing/bar.html'),
           path.resolve('test/get-data-dependencies/missing/bar.twig')
