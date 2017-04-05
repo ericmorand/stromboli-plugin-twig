@@ -28,30 +28,36 @@ class Plugin {
         }
       )
     };
+
+    /**
+     *
+     * @param file
+     * @param twig
+     * @returns {Twig.Template|*}
+     * @private
+     */
+    this._compile = function(file, twig) {
+      twig.cache(false);
+
+      return twig.twig({
+        path: file,
+        namespaces: this.config.namespaces,
+        rethrow: true,
+        async: false
+      });
+    };
   }
 
-  compile(file) {
+  compile(file, twig) {
     var that = this;
 
-    return this.getData(file).then(
+    return this.getData(file, twig).then(
       function (data) {
         return new Promise(function (fulfill, reject) {
-          var twig = that.twig;
-
-          twig.cache(false);
-
           try {
-            twig.twig({
-              path: file,
-              namespaces: that.config.namespaces,
-              rethrow: true,
-              async: false, // todo: use async when it's fixed in twigjs, @see node_modules/twig/twig.js:5397
-              load: function (template) {
-                fulfill({
-                  data: data,
-                  template: template
-                })
-              }
+            fulfill({
+              data: data,
+              template: that._compile(file, twig)
             });
           }
           catch (err) {
@@ -74,7 +80,7 @@ class Plugin {
   render(file, output) {
     var that = this;
 
-    that.twig = requireUncached('twig');
+    let twig = requireUncached('twig');
 
     if (!output) {
       output = 'index.html';
@@ -94,7 +100,7 @@ class Plugin {
     };
 
     // retrieve dependencies and render the template
-    return that.compile(file).then(
+    return that.compile(file, twig).then(
       function (result) {
         let data = result.data;
         let template = result.template;
@@ -152,7 +158,13 @@ class Plugin {
     return path.join(path.dirname(file), path.basename(file) + '.data.js');
   }
 
-  getData(file) {
+  /**
+   *
+   * @param file
+   * @param twig
+   * @returns {Promise.<{}>}
+   */
+  getData(file, twig) {
     var that = this;
     var dataFile = that.getDataPath(file);
 
@@ -175,13 +187,7 @@ class Plugin {
           let nh = require('node-hook');
 
           nh.hook('.twig', function (source, filename) {
-            source = 'let twig = require(\'twig\'); module.exports = twig.twig(' + JSON.stringify({
-                path: filename,
-                namespaces: that.config.namespaces,
-                async: false
-              }) + ');';
-
-            return source;
+            return `module.exports = '${filename}';`;
           });
 
           try {
@@ -196,7 +202,14 @@ class Plugin {
 
           if (typeof data === 'function') {
             try {
-              data = data(that);
+              data = data({
+                twig: twig,
+                render: function(file, data) {
+                  let template = that._compile(file, twig);
+
+                  return template.render(data);
+                }
+              });
             }
             catch (err) {
               reject({

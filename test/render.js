@@ -1,4 +1,5 @@
 const Plugin = require('../src/plugin');
+const Promise = require('promise');
 const tap = require('tap');
 const path = require('path');
 const fs = require('fs');
@@ -155,21 +156,35 @@ tap.test('render', function (test) {
   });
 
   test.test('should use a fresh twig instance', function (test) {
-    return plugin.render(path.resolve('test/render/twig-fresh/first.twig')).then(
-      function () {
-        plugin.render(path.resolve('test/render/twig-fresh/second.twig')).then(
-          function (result) {
-            let data = result.data;
-            let template = result.template;
+    return Promise.all([
+      plugin.render(path.resolve('test/render/twig-fresh/first.twig')),
+      plugin.render(path.resolve('test/render/twig-fresh/second.twig'))
+    ]).then(function (results) {
+      let firstResult = results[0].binaries[0].data;
+      let secondResult = results[1].binaries[0].data;
 
-            let binary = template.render(data.data);
+      console.log(firstResult, secondResult);
 
-            test.notOk(binary);
+      test.notOk(secondResult);
 
-            test.end();
-          }
-        )
-      }
-    )
+      test.end();
+    });
+
+    // return plugin.render(path.resolve('test/render/twig-fresh/first.twig')).then(
+    //   function () {
+    //     plugin.render(path.resolve('test/render/twig-fresh/second.twig')).then(
+    //       function (result) {
+    //         let data = result.data;
+    //         let template = result.template;
+    //
+    //         let binary = template.render(data.data);
+    //
+    //         test.notOk(binary);
+    //
+    //         test.end();
+    //       }
+    //     )
+    //   }
+    // )
   });
 });
