@@ -36,7 +36,7 @@ class Plugin {
      * @returns {Twig.Template|*}
      * @private
      */
-    this._compile = function(file, twig) {
+    this._compile = function (file, twig) {
       twig.cache(false);
 
       return twig.twig({
@@ -93,65 +93,45 @@ class Plugin {
       error: null
     };
 
-    let updateRenderResult = function (dependencies) {
-      dependencies.forEach(function (dependency) {
-        renderResult.sourceDependencies.push(dependency);
-      });
-    };
-
     // retrieve dependencies and render the template
-    return that.compile(file, twig).then(
-      function (result) {
-        let data = result.data;
-        let template = result.template;
+    return that.getDependencies(file).then(
+      function(dependencies) {
+        renderResult.sourceDependencies = dependencies;
 
-        return Promise.all(
-          [
-            that.getDependencies(file).then(
-              function (dependencies) {
-                updateRenderResult(dependencies);
+        return that.compile(file, twig).then(
+          function (result) {
+            let data = result.data;
+            let template = result.template;
 
-                return new Promise(function (fulfill, reject) {
-                  try {
-                    var binary = template.render(data);
-
-                    renderResult.binaries.push({
-                      name: output,
-                      data: binary
-                    });
-
-                    fulfill(renderResult);
-                  }
-                  catch (err) {
-                    renderResult.error = {
-                      file: err.file,
-                      message: err.message
-                    };
-
-                    reject(renderResult);
-                  }
+            return new Promise(function (fulfill, reject) {
+              try {
+                fulfill(template.render(data));
+              }
+              catch (err) {
+                reject({
+                  file: err.file,
+                  message: err.message
                 });
               }
-            )
-          ]
-        ).then(
-          function () {
-            return renderResult;
+            })
           }
         )
+      }
+    ).then(
+      function (binary) {
+        renderResult.binaries.push({
+          name: output,
+          data: binary
+        });
+
+        return renderResult;
       },
-      function (err) {
-        updateRenderResult([file]);
-
-        if (err.file && (err.file !== file)) {
-          updateRenderResult([err.file]);
-        }
-
-        renderResult.error = err;
+      function(error) {
+        renderResult.error = error;
 
         return Promise.reject(renderResult);
       }
-    )
+    );
   }
 
   getDataPath(file) {
@@ -204,7 +184,7 @@ class Plugin {
             try {
               data = data({
                 twig: twig,
-                render: function(file, data) {
+                render: function (file, data) {
                   let template = that._compile(file, twig);
 
                   return template.render(data);
@@ -267,7 +247,7 @@ class Plugin {
             `${id}/index.js`
           ];
 
-          candidates.forEach(function(candidate) {
+          candidates.forEach(function (candidate) {
             dependencies.push(path.resolve(parent.basedir, candidate));
           });
         }
