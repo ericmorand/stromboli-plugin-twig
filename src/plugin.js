@@ -95,7 +95,7 @@ class Plugin {
 
     // retrieve dependencies and render the template
     return that.getDependencies(file).then(
-      function(dependencies) {
+      function (dependencies) {
         renderResult.sourceDependencies = dependencies;
 
         return that.compile(file, twig).then(
@@ -126,7 +126,7 @@ class Plugin {
 
         return renderResult;
       },
-      function(error) {
+      function (error) {
         renderResult.error = error;
 
         return Promise.reject(renderResult);
@@ -223,12 +223,24 @@ class Plugin {
       let dependencies = [];
       let twigPromises = [];
 
+      let updateDependencies = function (file) {
+        if (dependencies.indexOf(file) < 0) {
+          dependencies.push(file);
+        }
+      };
+
+      depper.on('file', function (file) {
+        updateDependencies(file);
+      });
+
       depper.on('data', function (data) {
-        if (path.extname(data.id) === '.twig') {
-          twigPromises.push(self.getTwigDependencies(data.id).then(
+        let file = data.id;
+
+        if (path.extname(file) === '.twig') {
+          twigPromises.push(self.getTwigDependencies(file).then(
             function (results) {
               results.forEach(function (result) {
-                dependencies.push(result);
+                updateDependencies(result);
 
                 return result;
               });
@@ -236,7 +248,7 @@ class Plugin {
           ));
         }
         else {
-          dependencies.push(data.id);
+          updateDependencies(file);
         }
       });
 
@@ -262,6 +274,10 @@ class Plugin {
             fulfill(dependencies);
           }
         );
+      });
+
+      depper.on('error', function (err) {
+        fulfill(dependencies);
       });
 
       depper.end({

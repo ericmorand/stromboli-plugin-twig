@@ -5,7 +5,7 @@ const path = require('path');
 let plugin = new Plugin({});
 
 tap.test('getDataDependencies', function (test) {
-  test.plan(4);
+  test.plan(5);
 
   test.test('should resolve with dependencies', function (test) {
     return plugin.getDataDependencies(path.resolve('test/get-data-dependencies/index.js')).then(
@@ -30,6 +30,23 @@ tap.test('getDataDependencies', function (test) {
       function (results) {
         test.same(results.sort(), [
           path.resolve('test/get-data-dependencies/error/index.js')
+        ].sort());
+
+        test.end();
+      },
+      function (err) {
+        test.fail(err);
+
+        test.end();
+      }
+    )
+  });
+
+  test.test('should resolve with dependencies on parse error', function (test) {
+    return plugin.getDataDependencies(path.resolve('test/get-data-dependencies/parse-error/index.js')).then(
+      function (results) {
+        test.same(results.sort(), [
+          path.resolve('test/get-data-dependencies/parse-error/index.js')
         ].sort());
 
         test.end();
