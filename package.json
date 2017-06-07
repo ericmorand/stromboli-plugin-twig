@@ -24,6 +24,6 @@
     "twig": "^1.10.0"
   },
   "peerDependencies": {
-    "twig": "^0.8.0"
+    "twig": "^1.10.5"
   }
 }

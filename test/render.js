@@ -42,7 +42,7 @@ tap.test('render', function (test) {
           path.resolve('test/render/error-in-partial/index.twig.data.js'),
           path.resolve('test/render/error-in-partial/partial.twig')
         ]);
-        // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
+
         test.equal(renderResult.error.file, path.resolve('test/render/error-in-partial/partial.twig'));
         test.ok(renderResult.error.message);
 
@@ -64,8 +64,8 @@ tap.test('render', function (test) {
           path.resolve('test/render/missing-partial/index.twig.data.js'),
           path.resolve('test/render/missing-partial/missing.twig')
         ].sort());
-        // todo: @see issue https://github.com/ericmorand/stromboli-plugin-twig/issues/60
-        test.equal(renderResult.error.file, path.resolve('test/render/missing-partial/missing.twig'));
+
+        test.equal(renderResult.error.file, path.resolve('test/render/missing-partial/index.twig'));
         test.ok(renderResult.error.message);
 
         test.end();
@@ -184,8 +184,6 @@ tap.test('render', function (test) {
     ]).then(function (results) {
       let firstResult = results[0].binaries[0].data;
       let secondResult = results[1].binaries[0].data;
-
-      console.log(firstResult, secondResult);
 
       test.notOk(secondResult);
 
