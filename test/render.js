@@ -7,7 +7,7 @@ const fs = require('fs');
 let plugin = new Plugin({});
 
 tap.test('render', function (test) {
-  test.plan(9);
+  test.plan(10);
 
   test.test('should reject with file, message and dependencies on error in entry', function (test) {
     return plugin.render(path.resolve('test/render/error/index.twig')).then(
@@ -206,5 +206,24 @@ tap.test('render', function (test) {
     //     )
     //   }
     // )
+  });
+
+  test.test('should resolve with binary dependencies', function (test) {
+    return plugin.render(path.resolve('test/render/binary-dependencies/index.twig')).then(
+      function (renderResult) {
+        test.same(renderResult.binaryDependencies.sort(), [
+          path.resolve('test/render/binary-dependencies/bar.png'),
+          path.resolve('test/render/binary-dependencies/foo/bar.png'),
+          path.resolve('test/render/foo/bar.png')
+        ].sort());
+
+        test.end();
+      },
+      function (err) {
+        test.fail(err);
+
+        test.end();
+      }
+    );
   });
 });

@@ -10,6 +10,7 @@
   "author": "Eric MORAND",
   "dependencies": {
     "fs-extra": "^2.0.0",
+    "html-deps": "^1.1.0",
     "module-deps": "^4.1.1",
     "node-hook": "^0.4.0",
     "promise": "^7.1.1",
