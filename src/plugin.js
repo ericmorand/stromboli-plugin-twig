@@ -119,12 +119,19 @@ class Plugin {
       }
     ).then(
       function (binary) {
-        renderResult.binaries.push({
-          name: output,
-          data: binary
-        });
+        // resolve binary dependencies
+        return that.getBinaryDependencies(binary, file).then(
+          function(dependencies) {
+            renderResult.binaryDependencies = dependencies;
 
-        return renderResult;
+            renderResult.binaries.push({
+              name: output,
+              data: binary
+            });
+
+            return renderResult;
+          }
+        );
       },
       function (error) {
         renderResult.error = error;
@@ -331,6 +338,37 @@ class Plugin {
         return [].concat.apply([], results);
       }
     )
+  }
+
+  getBinaryDependencies(data, file) {
+    let self = this;
+    let dependencies = [];
+
+    return new Promise(function (fulfill, reject) {
+      const HTMLDeps = require('html-deps');
+
+      let depper = new HTMLDeps();
+
+      depper.on('data', function (dep) {
+        dependencies.push(dep);
+      });
+
+      depper.on('missing', function (dep) {
+        dependencies.push(dep);
+      });
+
+      depper.on('error', function () {
+        // noop, we don't care but we have to catch this
+      });
+
+      depper.on('finish', function () {
+        fulfill(dependencies);
+      });
+
+      depper.inline(data, path.dirname(file));
+
+      depper.end();
+    })
   }
 }
 
