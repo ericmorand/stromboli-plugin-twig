@@ -8,7 +8,11 @@ tap.test('constructor', function (test) {
   test.test('should support no config', function(test) {
     let plugin = new Plugin();
 
-    test.same(plugin.config, {});
+    test.same(plugin.config, {
+      sourceMap: true,
+      rethrow: true,
+      async: false
+    });
 
     test.end();
   });

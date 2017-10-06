@@ -2,12 +2,11 @@ const Plugin = require('../src/plugin');
 const Promise = require('promise');
 const tap = require('tap');
 const path = require('path');
-const fs = require('fs');
 
 let plugin = new Plugin({});
 
 tap.test('render', function (test) {
-  test.plan(10);
+  test.plan(12);
 
   test.test('should reject with file, message and dependencies on error in entry', function (test) {
     return plugin.render(path.resolve('test/render/error/index.twig')).then(
@@ -119,7 +118,7 @@ tap.test('render', function (test) {
       function (renderResult) {
         test.ok(renderResult.binaries);
 
-        let render = renderResult.binaries[0].data;
+        let render = renderResult.binaries[0].data.toString();
         let expected = '<div class="bar">Dummy</div>';
 
         test.same(render, expected);
@@ -162,7 +161,7 @@ tap.test('render', function (test) {
       function (renderResult) {
         test.ok(renderResult.binaries);
 
-        let render = renderResult.binaries[0].data;
+        let render = renderResult.binaries[0].data.toString();
         let wanted = '<div>partial-1</div><div>partial-2</div>';
 
         test.same(render, wanted);
@@ -213,8 +212,7 @@ tap.test('render', function (test) {
       function (renderResult) {
         test.same(renderResult.binaryDependencies.sort(), [
           path.resolve('test/render/binary-dependencies/bar.png'),
-          path.resolve('test/render/binary-dependencies/foo/bar.png'),
-          path.resolve('test/render/foo/bar.png')
+          path.resolve('test/render/binary-dependencies/partial/foo.png')
         ].sort());
 
         test.end();
@@ -223,6 +221,38 @@ tap.test('render', function (test) {
         test.fail(err);
 
         test.end();
+      }
+    );
+  });
+
+  test.test('should render with external map', function (t) {
+    let plugin = new Plugin({
+      sourceMapEmbed: false
+    });
+
+    return plugin.render(path.resolve('test/render/map/index.twig')).then(
+      function (renderResult) {
+        t.equal(renderResult.sourceDependencies.length, 2);
+        t.equal(renderResult.binaries.length, 2);
+      },
+      function (err) {
+        t.fail(err);
+      }
+    );
+  });
+
+  test.test('should render with embedded map', function (t) {
+    let plugin = new Plugin({
+      sourceMapEmbed: true
+    });
+
+    return plugin.render(path.resolve('test/render/map/index.twig')).then(
+      function (renderResult) {
+        t.equal(renderResult.sourceDependencies.length, 2);
+        t.equal(renderResult.binaries.length, 1);
+      },
+      function (err) {
+        t.fail(err);
       }
     );
   });
