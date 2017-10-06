@@ -4,13 +4,14 @@
   "description": "",
   "main": "src/plugin.js",
   "scripts": {
-    "pretest": "npm prune && npm update",
-    "test": "tap test/*.js --cov --reporter=spec --100"
+    "test": "tap test/*.js --cov --reporter=spec --100",
+    "test-html": "tap test/*.js --cov --reporter=spec --100 --coverage-report=html"
   },
   "author": "Eric MORAND",
   "dependencies": {
     "fs-extra": "^2.0.0",
     "html-deps": "^1.1.0",
+    "html-source-map-rebase": "^1.0.0",
     "module-deps": "^4.1.1",
     "node-hook": "^0.4.0",
     "promise": "^7.1.1",
@@ -22,9 +23,9 @@
   "devDependencies": {
     "promise": "^7.1.1",
     "tap": "^7.1.2",
-    "twig": "^1.10.0"
+    "twing": "^0.1.1"
   },
   "peerDependencies": {
-    "twig": "^1.10.5"
+    "twing": "^0.1.1"
   }
 }

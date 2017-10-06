@@ -2,6 +2,10 @@ const fs = require('fs-extra');
 const path = require('path');
 const requireUncached = require('require-uncached');
 
+const Rebaser = require('html-source-map-rebase');
+const Readable = require('stream').Readable;
+const through = require('through2');
+
 const Promise = require('promise');
 const fsStat = Promise.denodeify(fs.stat);
 
@@ -12,6 +16,10 @@ class Plugin {
    */
   constructor(config) {
     this.config = config || {};
+
+    this.config.sourceMap = true;
+    this.config.rethrow = true;
+    this.config.async = false;
 
     /**
      *
@@ -39,12 +47,9 @@ class Plugin {
     this._compile = function (file, twig) {
       twig.cache(false);
 
-      return twig.twig({
-        path: file,
-        namespaces: this.config.namespaces,
-        rethrow: true,
-        async: false
-      });
+      this.config.path = file;
+
+      return twig.twig(this.config);
     };
   }
 
@@ -80,7 +85,7 @@ class Plugin {
   render(file, output) {
     var that = this;
 
-    let twig = requireUncached('twig');
+    let twig = requireUncached('twing');
 
     if (!output) {
       output = 'index.html';
@@ -92,6 +97,9 @@ class Plugin {
       sourceDependencies: [],
       error: null
     };
+
+    // @todo: useless until twing supports it
+    // this.twigConfig.outFile = output;
 
     // retrieve dependencies and render the template
     return that.getDependencies(file).then(
@@ -118,20 +126,50 @@ class Plugin {
         )
       }
     ).then(
-      function (binary) {
-        // resolve binary dependencies
-        return that.getBinaryDependencies(binary, file).then(
-          function(dependencies) {
-            renderResult.binaryDependencies = dependencies;
+      function (twingRenderResult) {
+        return new Promise(function (fulfill, reject) {
+          let binary = '';
 
-            renderResult.binaries.push({
-              name: output,
-              data: binary
+          let rebaser = new Rebaser({
+            map: twingRenderResult.sourceMap
+          });
+
+          rebaser.on('rebase', function (rebased) {
+            rebased = path.join(path.dirname(file), rebased);
+
+            if (renderResult.binaryDependencies.indexOf(rebased) < 0) {
+              renderResult.binaryDependencies.push(rebased);
+            }
+          });
+
+          let stream = new Readable();
+
+          stream
+            .pipe(rebaser)
+            .pipe(through(function (chunk, enc, cb) {
+              binary = chunk;
+
+              cb();
+            }))
+            .on('finish', function () {
+              renderResult.binaries.push({
+                name: output,
+                data: binary
+              });
+
+              if (!that.config.sourceMapEmbed) {
+                renderResult.binaries.push({
+                  name: output + '.map',
+                  data: twingRenderResult.sourceMap
+                });
+              }
+
+              fulfill(renderResult);
             });
 
-            return renderResult;
-          }
-        );
+          stream.push(twingRenderResult.markup);
+          stream.push(null);
+        });
       },
       function (error) {
         renderResult.error = error;
@@ -338,37 +376,6 @@ class Plugin {
         return [].concat.apply([], results);
       }
     )
-  }
-
-  getBinaryDependencies(data, file) {
-    let self = this;
-    let dependencies = [];
-
-    return new Promise(function (fulfill, reject) {
-      const HTMLDeps = require('html-deps');
-
-      let depper = new HTMLDeps();
-
-      depper.on('data', function (dep) {
-        dependencies.push(dep);
-      });
-
-      depper.on('missing', function (dep) {
-        dependencies.push(dep);
-      });
-
-      depper.on('error', function () {
-        // noop, we don't care but we have to catch this
-      });
-
-      depper.on('finish', function () {
-        fulfill(dependencies);
-      });
-
-      depper.inline(data, path.dirname(file));
-
-      depper.end();
-    })
   }
 }
 
