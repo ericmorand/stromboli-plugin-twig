@@ -11,7 +11,7 @@
   "dependencies": {
     "fs-extra": "^2.0.0",
     "html-deps": "^1.1.0",
-    "html-source-map-rebase": "^1.0.0",
+    "html-source-map-rebase": "^1.0.1",
     "module-deps": "^4.1.1",
     "node-hook": "^0.4.0",
     "promise": "^7.1.1",
