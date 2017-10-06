@@ -119,7 +119,7 @@ tap.test('render', function (test) {
         test.ok(renderResult.binaries);
 
         let render = renderResult.binaries[0].data.toString();
-        let expected = '<div class="bar">Dummy</div>';
+        let expected = '<html><head></head><body><div class="bar">Dummy</div></body></html>';
 
         test.same(render, expected);
 
@@ -162,7 +162,7 @@ tap.test('render', function (test) {
         test.ok(renderResult.binaries);
 
         let render = renderResult.binaries[0].data.toString();
-        let wanted = '<div>partial-1</div><div>partial-2</div>';
+        let wanted = '<html><head></head><body><div>partial-1</div><div>partial-2</div></body></html>';
 
         test.same(render, wanted);
 

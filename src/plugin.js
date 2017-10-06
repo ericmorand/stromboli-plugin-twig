@@ -135,7 +135,7 @@ class Plugin {
           });
 
           rebaser.on('rebase', function (rebased) {
-            rebased = path.join(path.dirname(file), rebased);
+            rebased = path.resolve(rebased);
 
             if (renderResult.binaryDependencies.indexOf(rebased) < 0) {
               renderResult.binaryDependencies.push(rebased);
