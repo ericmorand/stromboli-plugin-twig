@@ -23,9 +23,9 @@
   "devDependencies": {
     "promise": "^7.1.1",
     "tap": "^7.1.2",
-    "twing": "^0.1.1"
+    "twig": "^1.10.5"
   },
   "peerDependencies": {
-    "twing": "^0.1.1"
+    "twig": "^1.10.5"
   }
 }

@@ -85,7 +85,7 @@ class Plugin {
   render(file, output) {
     var that = this;
 
-    let twig = requireUncached('twing');
+    let twig = requireUncached('twig');
 
     if (!output) {
       output = 'index.html';
@@ -126,50 +126,13 @@ class Plugin {
         )
       }
     ).then(
-      function (twingRenderResult) {
-        return new Promise(function (fulfill, reject) {
-          let binary = '';
-
-          let rebaser = new Rebaser({
-            map: twingRenderResult.sourceMap
-          });
-
-          rebaser.on('rebase', function (rebased) {
-            rebased = path.resolve(rebased);
-
-            if (renderResult.binaryDependencies.indexOf(rebased) < 0) {
-              renderResult.binaryDependencies.push(rebased);
-            }
-          });
-
-          let stream = new Readable();
-
-          stream
-            .pipe(rebaser)
-            .pipe(through(function (chunk, enc, cb) {
-              binary = chunk;
-
-              cb();
-            }))
-            .on('finish', function () {
-              renderResult.binaries.push({
-                name: output,
-                data: binary
-              });
-
-              if (!that.config.sourceMapEmbed) {
-                renderResult.binaries.push({
-                  name: output + '.map',
-                  data: twingRenderResult.sourceMap
-                });
-              }
-
-              fulfill(renderResult);
-            });
-
-          stream.push(twingRenderResult.markup);
-          stream.push(null);
+      function (binary) {
+        renderResult.binaries.push({
+          name: output,
+          data: binary
         });
+
+        return renderResult;
       },
       function (error) {
         renderResult.error = error;
