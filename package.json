@@ -1,6 +1,6 @@
 {
   "name": "stromboli-plugin-twig",
-  "version": "0.22.2",
+  "version": "0.23.0",
   "description": "",
   "main": "src/plugin.js",
   "scripts": {
