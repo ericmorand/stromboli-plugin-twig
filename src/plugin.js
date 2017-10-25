@@ -209,12 +209,6 @@ class Plugin {
 
           deleteRequireCache(dataFile);
 
-          let nh = require('node-hook');
-
-          nh.hook('.twig', function (source, filename) {
-            return `module.exports = '${filename}';`;
-          });
-
           try {
             var data = require(dataFile);
           }
